@@ -1,0 +1,2153 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Album Rater</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f4f1;--card:#ffffff;--card2:#f9f9f7;--tx:#18181b;--mut:#71717a;
+  --ac:#c2410c;--ac-on:#ffffff;--bd:#e4e4e7;--sh:0 2px 10px rgba(0,0,0,.04);color-scheme:light;
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-ui]){
+    --bg:#111113;--card:#1a1a1e;--card2:#222228;--tx:#f4f4f5;--mut:#a1a1aa;
+    --ac:#fb923c;--ac-on:#111113;--bd:#2c2c33;--sh:0 4px 16px rgba(0,0,0,.35);color-scheme:dark;
+  }
+}
+:root[data-ui="dark"]{--bg:#111113;--card:#1a1a1e;--card2:#222228;--tx:#f4f4f5;--mut:#a1a1aa;--ac:#fb923c;--ac-on:#111113;--bd:#2c2c33;--sh:0 4px 16px rgba(0,0,0,.35);color-scheme:dark}
+:root[data-ui="oled"]{--bg:#000000;--card:#0c0c0e;--card2:#151519;--tx:#f4f4f5;--mut:#8e8e98;--ac:#a3e635;--ac-on:#0b0b0b;--bd:#222228;--sh:none;color-scheme:dark}
+:root[data-ui="light"]{--bg:#f4f4f1;--card:#ffffff;--card2:#f9f9f7;--tx:#18181b;--mut:#71717a;--ac:#c2410c;--ac-on:#ffffff;--bd:#e4e4e7;--sh:0 2px 10px rgba(0,0,0,.04);color-scheme:light}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:'Inter',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+body{padding:calc(12px + env(safe-area-inset-top,0px)) 14px calc(114px + env(safe-area-inset-bottom,0px))}
+body.studio-mode{padding-bottom:calc(36px + env(safe-area-inset-bottom,0px))}
+body.clean-shot{padding:32px 14px}
+body.clean-shot .hide-clean{display:none!important}
+.wrap{max-width:680px;margin:0 auto}
+.wrap.wide{max-width:1080px}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:9px 13px;transition:transform .12s,border-color .15s,background .15s,opacity .15s}
+button:active{transform:scale(.98)}
+button.primary{background:var(--ac);color:var(--ac-on);border-color:var(--ac);font-weight:600}
+button.ghost{background:transparent;border-color:transparent;color:var(--mut);padding:7px 10px}
+button.ghost:hover{color:var(--tx);background:var(--card2)}
+button.icon-btn{padding:8px 11px;display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+input[type=text],input[type=password],input[type=number],textarea,select{width:100%;background:var(--card2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;font-size:15px;outline:none;transition:border-color .15s}
+input:focus,textarea:focus,select:focus{border-color:var(--ac)}
+textarea{resize:vertical;line-height:1.45}
+select.compact-sel{width:auto;padding:7px 10px;font-size:12.5px;border-radius:9px;background:var(--card)}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.brand{font-size:19px;font-weight:800;letter-spacing:-.02em;margin:0}
+.top-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--mut)}
+.sync-dot.ok{background:#22c55e}.sync-dot.dirty{background:#f59e0b}.sync-dot.err{background:#ef4444}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;box-shadow:var(--sh);margin-bottom:12px}
+.drop-area{border:1.5px dashed var(--bd);border-radius:12px;padding:11px 12px;background:var(--card2);transition:border-color .15s,background .15s}
+.drop-area.over{border-color:var(--ac);background:var(--card)}
+.drop-area textarea{background:transparent;border:none;padding:2px 0;min-height:68px;font-size:15px}
+.drop-area textarea:focus{border-color:transparent}
+.subtle-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12px;padding:5px 10px;border-radius:8px;background:var(--card);border:1px solid var(--bd);color:var(--mut);font-weight:500}
+.chip:hover{color:var(--tx);border-color:var(--mut)}
+.ctx-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.ctx-actions button{flex:1;min-width:120px}
+.status-msg{font-size:13px;color:var(--mut);margin-top:8px;min-height:16px}
+.status-msg.err{color:#ef4444}
+.manual-grid{display:grid;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:500px){.row2{grid-template-columns:1fr}}
+
+.sec-lbl{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);margin:14px 2px 8px}
+.alb-item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);border-radius:13px;padding:10px 12px;margin-bottom:8px;box-shadow:var(--sh);transition:border-color .15s}
+.alb-item:hover{border-color:var(--mut)}
+.alb-click{display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer}
+.alb-thumb{width:46px;height:46px;border-radius:8px;object-fit:cover;background:var(--card2);flex-shrink:0;border:1px solid var(--bd)}
+.alb-meta{min-width:0;flex:1}.alb-title{font-weight:600;font-size:14.5px;overflow-wrap:anywhere}.alb-sub{font-size:12.5px;color:var(--mut);margin-top:2px}
+.alb-btns{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.cand{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:9px 10px;border-radius:10px;margin-top:6px;background:var(--card2)}
+.cand img,.cand .ph{width:44px;height:44px;border-radius:7px;object-fit:cover;background:var(--card);flex-shrink:0}
+.cand-info{min-width:0;flex:1}.cand-t{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cand-s{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.rate-head{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:11px 13px;margin-bottom:10px}
+.rate-head .alb-thumb{width:52px;height:52px;cursor:pointer}
+.rate-info{flex:1;min-width:0;cursor:pointer}.rate-artist{font-size:12.5px;color:var(--mut);font-weight:500}.rate-album{font-size:16px;font-weight:700;overflow-wrap:anywhere;line-height:1.25}
+.t-card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin-bottom:7px;scroll-margin-top:12px;transition:border-color .15s}
+.t-card.un{border-left:3px solid var(--bd)}.t-card.act{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac) inset}
+.t-card.cl{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px}.t-card.cl:hover{border-color:var(--mut)}
+.t-left{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+.t-idx{font-family:'DM Mono',monospace;font-size:12px;color:var(--mut);min-width:20px}
+.t-nm{font-weight:500;font-size:14.5px;overflow-wrap:anywhere}
+.t-bdg{font-family:'DM Mono',monospace;font-weight:700;font-size:14.5px;color:var(--ac);min-width:40px;text-align:right;flex-shrink:0}
+.t-card.un .t-bdg{color:var(--mut);font-weight:400}
+.t-act-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.t-act-top .t-nm{font-weight:600;font-size:15px}
+.kpad1,.kpad2{display:flex;gap:6px;margin-top:10px}
+.kpad1 button{flex:1;aspect-ratio:1;max-width:48px;min-height:42px;border-radius:50%;padding:0;font-size:15.5px;font-weight:600}
+.kpad2 button{flex:1;height:44px;border-radius:22px;padding:0;font-size:15px;font-weight:600}
+.kpad2 .bk{flex:0 0 44px;border-radius:50%;color:var(--mut)}
+.kpad1 button.on,.kpad2 button.on{background:var(--ac);color:var(--ac-on);border-color:var(--ac)}
+.rate-add-bar{display:flex;gap:8px;margin-bottom:10px}.rate-add-bar input{flex:1;font-size:14px;padding:8px 11px}
+
+.foot{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));z-index:20}
+.foot-in{max-width:680px;margin:0 auto}
+.foot-avg{font-size:13.5px;color:var(--mut);margin-bottom:8px;display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.foot-avg b{font-size:19px;color:var(--ac);font-family:'DM Mono',monospace}
+.foot-btns{display:flex;gap:8px}.foot-btns button{flex:1;padding:10px 12px;font-size:14px}
+
+#drag-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;pointer-events:none}
+#drag-overlay.show{display:flex}
+.drag-box{border:2px dashed #fff;border-radius:20px;padding:34px 40px;text-align:center;color:#fff;max-width:420px;background:rgba(20,20,24,.78)}
+.drag-box h2{margin:0 0 6px;font-size:20px}.drag-box p{margin:0;opacity:.78;font-size:14px}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:90;display:flex;align-items:flex-end;justify-content:center;padding:12px}
+@media(min-width:640px){.modal-bg{align-items:center}}
+.modal{background:var(--card);border:1px solid var(--bd);border-radius:16px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.modal-hd h2{margin:0;font-size:17px}
+.set-grp{padding:11px 0;border-top:1px solid var(--bd)}.set-grp:first-of-type{border-top:none;padding-top:0}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0}
+.set-lbl{font-size:14px;font-weight:500}.set-sub{font-size:12px;color:var(--mut);margin-top:2px}
+.set-ctrl{flex-shrink:0}.set-ctrl select,.set-ctrl input[type=number]{width:auto;min-width:120px;padding:6px 10px;font-size:13.5px}
+.switch{position:relative;width:42px;height:24px;display:inline-block}.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:var(--bd);border-radius:999px;cursor:pointer;transition:.18s}
+.slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch input:checked+.slider{background:var(--ac)}.switch input:checked+.slider:before{transform:translateX(18px)}
+.cover-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.cover-opt{padding:0;border-radius:8px;overflow:hidden;border:2px solid transparent;aspect-ratio:1}
+.cover-opt:hover{border-color:var(--ac)}.cover-opt img{width:100%;height:100%;object-fit:cover;display:block}
+.edit-tr-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}.edit-tr-row input{padding:7px 10px;font-size:14px}
+
+.studio-stage{display:flex;justify-content:center;align-items:flex-start;margin:8px 0 18px}
+.clean-exit{position:fixed;top:12px;right:12px;z-index:50;opacity:.35;font-size:12px;padding:6px 10px}.clean-exit:hover{opacity:1}
+.studio-panel{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.studio-tabs{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.tab-pills{display:flex;gap:6px}.tab-pills button.active{background:var(--ac);color:var(--ac-on);border-color:var(--ac);font-weight:600}
+.lay-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(106px,1fr));gap:6px}
+.lay-btn{padding:8px 8px;font-size:12px;font-weight:500;text-align:center;border-radius:9px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.lay-btn.active{background:var(--ac);color:var(--ac-on);border-color:var(--ac);font-weight:600}.lay-ico{font-size:15px;line-height:1}
+.th-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+.th-btn{padding:7px 8px;font-size:11.5px;font-weight:500;display:flex;align-items:center;gap:7px;border-radius:9px;text-align:left}
+.th-btn.active{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac) inset;font-weight:700}
+.th-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;border:1px solid rgba(128,128,128,.35)}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#18181b;color:#fff;padding:9px 15px;border-radius:999px;font-size:13px;font-weight:500;z-index:120;box-shadow:0 6px 24px rgba(0,0,0,.3);pointer-events:none;opacity:0;transition:opacity .18s}
+.toast.show{opacity:1}
+</style>
+
+<style id="card-styles">
+.card-root,.card-root *{box-sizing:border-box}
+.card-root{
+  --c-bg:#141418;--c-solid-bg:#141418;--c-surface:rgba(255,255,255,0.06);--c-surface-2:rgba(255,255,255,0.105);
+  --c-border:rgba(255,255,255,0.12);--c-text:#f4f4f5;--c-muted:rgba(244,244,245,0.62);
+  --c-accent:#fb923c;--c-accent-ink:#111111;--c-hi-bg:rgba(251,146,60,0.20);--c-hi-bd:rgba(251,146,60,0.58);
+  background:var(--c-bg);color:var(--c-text);border:1px solid var(--c-border);border-radius:18px;
+  padding:26px;width:100%;max-width:860px;position:relative;overflow:hidden;
+  font-family:'Inter',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.35;
+  box-shadow:0 24px 60px rgba(0,0,0,.35)
+}
+.c-mono{font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+.c-disp{font-family:'Syne','Inter',system-ui,sans-serif}
+.c-cover{display:block;object-fit:cover;border-radius:12px;background:var(--c-surface-2);flex-shrink:0;border:1px solid var(--c-border)}
+.c-artist{font-size:13.5px;font-weight:600;color:var(--c-muted);letter-spacing:.02em}
+.c-album{font-size:23px;font-weight:800;color:var(--c-text);line-height:1.16}
+.c-year{font-weight:500;color:var(--c-muted);font-size:.80em;margin-left:6px}
+.c-header-inline{font-size:21px;font-weight:700;color:var(--c-text);line-height:1.22}
+.c-header-inline .art{color:var(--c-accent);font-weight:700}.c-header-inline .sep{color:var(--c-muted);margin:0 6px;font-weight:400}.c-header-inline .yr{color:var(--c-muted);font-weight:500;font-size:.84em;margin-left:6px}
+.c-avg-lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--c-muted)}
+.c-avg-val{font-family:'DM Mono',ui-monospace,monospace;font-weight:700;font-variant-numeric:tabular-nums;color:var(--c-accent);line-height:1}
+.c-avg-box{padding:11px 15px;border-radius:12px;background:var(--c-surface-2);border:1px solid var(--c-border);display:flex;align-items:baseline;justify-content:space-between;gap:14px}
+
+.t-row{display:flex;align-items:center;gap:10px;min-width:0;transition:opacity .15s}
+.t-num{font-family:'DM Mono',ui-monospace,monospace;font-size:11.5px;color:var(--c-muted);width:20px;flex-shrink:0;text-align:right}
+.t-title{flex:1;min-width:0;font-size:13.5px;font-weight:500;color:var(--c-text);overflow-wrap:anywhere}
+.t-score{font-family:'DM Mono',ui-monospace,monospace;font-weight:700;font-size:15px;flex-shrink:0;text-align:right;min-width:38px}
+.t-pick{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:5px;background:var(--c-hi-bg);color:var(--c-accent);border:1px solid var(--c-hi-bd);flex-shrink:0}
+.t-dot-hi{width:6px;height:6px;border-radius:50%;background:var(--c-accent);flex-shrink:0}
+
+/* 6 High-Separation Highlight Modes */
+.hl-spotlight .t-row.dim{opacity:0.40}
+.hl-spotlight .t-row.hi .t-title{font-weight:700}
+
+.hl-framed .t-row.hi{background:var(--c-surface-2)!important;border:1.5px solid var(--c-hi-bd)!important;box-shadow:0 3px 12px rgba(0,0,0,.14);border-radius:9px}
+.hl-framed .t-row.dim{background:transparent!important;border-color:transparent!important;opacity:0.78}
+
+.hl-wash .t-row.hi{background:var(--c-hi-bg)!important;border:1px solid var(--c-hi-bd)!important;border-radius:9px}
+.hl-wash .t-row.hi .t-title{font-weight:700}
+.hl-wash .t-row.dim{opacity:0.72}
+
+.hl-stripeTag .t-row.hi{box-shadow:inset 4px 0 0 var(--c-accent);background:var(--c-surface-2)!important;border-radius:8px}
+.hl-stripeTag .t-row.hi .t-title{font-weight:700}
+.hl-stripeTag .t-row.dim{opacity:0.58}
+
+.hl-scorePill .t-row.hi .t-score{background:var(--c-accent);color:var(--c-accent-ink)!important;padding:2px 8px;border-radius:7px;font-size:13.5px}
+.hl-scorePill .t-row.hi{border-bottom:1.5px solid var(--c-hi-bd)!important}
+.hl-scorePill .t-row.dim{opacity:0.62}
+
+.hl-grp-hd{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--c-accent);margin:8px 2px 5px;display:flex;align-items:center;gap:8px}
+.hl-grp-hd.muted{color:var(--c-muted);margin-top:12px}
+.hl-grp-hd::after{content:"";flex:1;height:1px;background:var(--c-border)}
+
+.c-extras{margin-top:14px;padding-top:12px;border-top:1px solid var(--c-border);display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-size:12px;color:var(--c-muted)}
+.c-extras b{color:var(--c-text);font-weight:600}
+.c-note{width:100%;font-size:12.5px;color:var(--c-text);opacity:.88;font-style:italic;line-height:1.45}
+.c-dist{display:flex;align-items:center;gap:4px;height:12px}.c-dist span{display:inline-block;height:100%;border-radius:2px;min-width:4px}
+
+/* 1. SIDE BY SIDE */
+.lay-side{max-width:820px}
+.lay-side .s-grid{display:grid;grid-template-columns:250px 1fr;gap:26px;align-items:start}
+.lay-side .s-left{display:flex;flex-direction:column;gap:12px}
+.lay-side .c-cover{width:100%;aspect-ratio:1}
+.lay-side .c-avg-val{font-size:28px}
+.lay-side .s-list{display:flex;flex-direction:column;gap:5px}
+.lay-side .t-row{padding:7px 11px;border-radius:9px;background:var(--c-surface);border:1px solid var(--c-border)}
+@media(max-width:640px){.lay-side .s-grid{grid-template-columns:1fr}.lay-side .c-cover{max-width:220px}}
+
+/* 2. CENTERED (Cohesive surface Average + Hero Cover) */
+.lay-center{max-width:560px}
+.lay-center .cen-top{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:20px}
+.lay-center .c-cover{width:265px;height:265px;border-radius:16px;margin-bottom:16px;box-shadow:0 14px 36px rgba(0,0,0,.28)}
+.lay-center .cen-list{display:flex;flex-direction:column;gap:5px}
+.lay-center .t-row{padding:8px 13px;border-radius:10px;background:var(--c-surface);border:1px solid var(--c-border)}
+.lay-center .cen-foot{margin-top:14px}
+.lay-center .c-avg-box{justify-content:center;gap:14px;padding:12px 20px}
+.lay-center .c-avg-val{font-size:28px}
+
+/* 3. SHOWCASE (Harmonious Meta Card + Spacious Left Column) */
+.lay-showcase{max-width:840px}
+.lay-showcase .sh-grid{display:grid;grid-template-columns:300px 1fr;gap:24px;align-items:start}
+.lay-showcase .sh-left{display:flex;flex-direction:column;gap:12px}
+.lay-showcase .c-cover{width:100%;aspect-ratio:1;border-radius:14px}
+.lay-showcase .sh-meta{padding:18px;border-radius:14px;background:var(--c-surface-2);border:1px solid var(--c-border);display:flex;flex-direction:column;gap:6px}
+.lay-showcase .sh-meta .c-artist{font-size:14px;color:var(--c-accent);text-transform:uppercase;letter-spacing:.08em}
+.lay-showcase .sh-meta .c-album{font-size:26px;line-height:1.15}
+.lay-showcase .sh-right{display:flex;flex-direction:column;gap:10px}
+.lay-showcase .sh-tracks{display:flex;flex-direction:column;gap:5px}
+.lay-showcase .t-row{padding:7px 12px;border-radius:9px;background:var(--c-surface);border:1px solid var(--c-border)}
+.lay-showcase .c-avg-val{font-size:32px}
+@media(max-width:660px){.lay-showcase .sh-grid{grid-template-columns:1fr}}
+
+/* 4. MINIMAL (Hero Cover + Swiss Hairlines, zero scored-count clutter) */
+.lay-minimal{max-width:620px;padding:28px 30px}
+.lay-minimal .min-hd{display:flex;align-items:center;gap:20px;padding-bottom:18px;margin-bottom:12px;border-bottom:1px solid var(--c-border)}
+.lay-minimal .c-cover{width:148px;height:148px;border-radius:10px}
+.lay-minimal .min-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.lay-minimal .min-avg{margin-top:6px;display:flex;align-items:baseline;gap:10px}
+.lay-minimal .c-avg-val{font-size:28px}
+.lay-minimal .t-row{padding:7px 6px;border-bottom:1px solid var(--c-border)}
+.lay-minimal .t-row:last-child{border-bottom:none}
+@media(max-width:520px){.lay-minimal .min-hd{flex-direction:column;align-items:flex-start}.lay-minimal .c-cover{width:180px;height:180px}}
+
+/* 5. LINED (Hero Cover + Meter Bars) */
+.lay-lined{max-width:640px}
+.lay-lined .lin-hd{display:flex;align-items:center;gap:20px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--c-border)}
+.lay-lined .c-cover{width:152px;height:152px;border-radius:12px}
+.lay-lined .lin-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.lay-lined .c-avg-val{font-size:26px}
+.lay-lined .t-row{padding:7px 8px;border-bottom:1px solid var(--c-border)}
+.lay-lined .t-row:last-child{border-bottom:none}
+.lay-lined .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.lay-lined .bar-wrap{width:80px;height:4px;background:var(--c-surface-2);border-radius:3px;overflow:hidden;flex-shrink:0}
+.lay-lined .bar-fill{height:100%;border-radius:3px}
+@media(max-width:520px){.lay-lined .lin-hd{flex-direction:column;align-items:flex-start}.lay-lined .c-cover{width:180px;height:180px}}
+
+/* 6. DIGITS (Hero Cover + Score-First List) */
+.lay-digits{max-width:640px}
+.lay-digits .dig-hd{display:flex;align-items:center;gap:20px;padding-bottom:18px;margin-bottom:12px;border-bottom:1px solid var(--c-border)}
+.lay-digits .c-cover{width:150px;height:150px;border-radius:12px}
+.lay-digits .dig-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.lay-digits .c-avg-val{font-size:30px}
+.lay-digits .t-row{padding:7px 8px;border-bottom:1px solid var(--c-border);gap:14px}
+.lay-digits .t-score{min-width:54px;text-align:left;font-size:20px}
+.lay-digits .dig-mid{flex:1;min-width:0}
+.lay-digits .dig-line{height:2px;background:var(--c-surface-2);border-radius:2px;margin-top:4px;overflow:hidden}
+.lay-digits .dig-line>div{height:100%;border-radius:2px}
+@media(max-width:520px){.lay-digits .dig-hd{flex-direction:column;align-items:flex-start}.lay-digits .c-cover{width:180px;height:180px}}
+
+/* 7. 2-COL SPLIT */
+.lay-split{max-width:860px}
+.lay-split .sp-hd{display:flex;align-items:center;gap:22px;padding-bottom:18px;margin-bottom:16px;border-bottom:1px solid var(--c-border)}
+.lay-split .c-cover{width:158px;height:158px;border-radius:12px}
+.lay-split .sp-hd-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.lay-split .c-avg-val{font-size:26px}
+.lay-split .sp-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 26px}
+.lay-split .t-row{padding:6px 8px;border-bottom:1px solid var(--c-border)}
+@media(max-width:600px){.lay-split .sp-hd{flex-direction:column;align-items:flex-start}.lay-split .sp-cols{grid-template-columns:1fr}}
+
+/* 8. SPLIT SIDE (Large Left Cover + 2-Col Tracks on Right) */
+.lay-splitSide{max-width:920px}
+.lay-splitSide .ss-grid{display:grid;grid-template-columns:250px 1fr;gap:24px;align-items:start}
+.lay-splitSide .ss-left{display:flex;flex-direction:column;gap:12px}
+.lay-splitSide .c-cover{width:100%;aspect-ratio:1}
+.lay-splitSide .c-avg-val{font-size:28px}
+.lay-splitSide .ss-cols{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px}
+.lay-splitSide .t-row{padding:6.5px 10px;border-radius:8px;background:var(--c-surface);border:1px solid var(--c-border)}
+@media(max-width:680px){.lay-splitSide .ss-grid{grid-template-columns:1fr}.lay-splitSide .ss-cols{grid-template-columns:1fr}}
+
+/* 9. POSTER */
+.lay-poster{max-width:820px;padding:0}
+.lay-poster .pos-hero{display:flex;align-items:center;gap:24px;padding:24px 26px;background:var(--c-surface-2);border-bottom:1px solid var(--c-border)}
+.lay-poster .c-cover{width:196px;height:196px;border-radius:14px}
+.lay-poster .pos-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.lay-poster .pos-meta .c-artist{text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:var(--c-accent)}
+.lay-poster .pos-meta .c-album{font-size:28px;line-height:1.12}
+.lay-poster .pos-stamp{padding:11px 16px;border-radius:12px;border:1.5px solid var(--c-accent);background:var(--c-surface);display:inline-flex;align-items:baseline;gap:12px;align-self:flex-start;margin-top:4px}
+.lay-poster .c-avg-val{font-size:28px}
+.lay-poster .pos-body{padding:20px 26px 24px}
+.lay-poster .pos-grid{display:grid;gap:6px 22px}.lay-poster .pos-grid.two{grid-template-columns:1fr 1fr}
+.lay-poster .t-row{padding:6.5px 9px;border-radius:8px;background:var(--c-surface);border:1px solid var(--c-border)}
+@media(max-width:640px){.lay-poster .pos-hero{flex-direction:column;align-items:flex-start}.lay-poster .pos-grid.two{grid-template-columns:1fr}}
+
+/* 10. LINER NOTES (Zero scored/skipped text!) */
+.lay-liner{max-width:660px;font-family:'DM Mono',ui-monospace,monospace}
+.lay-liner .ln-top{display:flex;gap:20px;align-items:center;padding-bottom:16px;border-bottom:1px dashed var(--c-border);margin-bottom:12px}
+.lay-liner .c-cover{width:154px;height:154px;border-radius:6px}
+.lay-liner .ln-kv{flex:1;min-width:0;font-size:13px;display:grid;gap:6px}
+.lay-liner .ln-kv div{overflow-wrap:anywhere}
+.lay-liner .ln-k{color:var(--c-muted);margin-right:8px;font-size:11.5px;text-transform:uppercase}.lay-liner .ln-v{color:var(--c-text);font-weight:700}.lay-liner .ln-v.ac{color:var(--c-accent)}
+.lay-liner .t-row{padding:5.5px 6px;border-bottom:1px dotted var(--c-border)}.lay-liner .t-row:last-child{border-bottom:none}
+.lay-liner .t-title{font-size:13px}
+@media(max-width:520px){.lay-liner .ln-top{flex-direction:column;align-items:flex-start}}
+
+/* 11. BENTO */
+.lay-bento{max-width:840px}
+.lay-bento .ben-top{display:grid;grid-template-columns:214px 1fr;gap:12px;margin-bottom:12px}
+.lay-bento .ben-cover{border-radius:14px;overflow:hidden;border:1px solid var(--c-border)}
+.lay-bento .c-cover{width:100%;height:100%;aspect-ratio:1;border-radius:0;border:none}
+.lay-bento .ben-side{display:flex;flex-direction:column;gap:12px}
+.lay-bento .ben-tile{background:var(--c-surface);border:1px solid var(--c-border);border-radius:14px;padding:18px;flex:1;display:flex;flex-direction:column;justify-content:center}
+.lay-bento .ben-avg{background:var(--c-surface-2);flex:0 0 auto;flex-direction:row;align-items:baseline;justify-content:space-between}
+.lay-bento .c-avg-val{font-size:32px}
+.lay-bento .ben-tracks{background:var(--c-surface);border:1px solid var(--c-border);border-radius:14px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+.lay-bento .t-row{padding:5.5px 8px;border-radius:7px}
+@media(max-width:640px){.lay-bento .ben-top{grid-template-columns:1fr}.lay-bento .ben-cover{max-width:220px}.lay-bento .ben-tracks{grid-template-columns:1fr}}
+
+/* 12. COMPACT (Telegram Portrait with Prominent Top Cover + Cohesive Avg) */
+.lay-compact{max-width:460px;padding:22px}
+.lay-compact .cmp-top{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding-bottom:14px;margin-bottom:12px;border-bottom:1px solid var(--c-border)}
+.lay-compact .c-cover{width:210px;height:210px;border-radius:14px}
+.lay-compact .c-avg-box{width:100%;padding:9px 14px}
+.lay-compact .c-avg-val{font-size:22px}
+.lay-compact .t-row{padding:6px 8px;border-radius:7px;margin-bottom:2px}
+.lay-compact .t-row:nth-child(odd):not(.hi){background:var(--c-surface)}
+
+/* 13. ATMOSPHERE */
+.lay-atmo{max-width:780px;padding:28px}
+.lay-atmo .atmo-bg{position:absolute;inset:-28px;width:calc(100% + 56px);height:calc(100% + 56px);object-fit:cover;filter:blur(30px) saturate(1.3);z-index:0;pointer-events:none}
+.lay-atmo .atmo-scrim{position:absolute;inset:0;z-index:1;pointer-events:none}
+.lay-atmo .atmo-in{position:relative;z-index:2}
+.lay-atmo .atmo-hd{display:flex;align-items:center;gap:22px;margin-bottom:20px}
+.lay-atmo .c-cover{width:186px;height:186px;border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.42)}
+.lay-atmo .atmo-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.lay-atmo .c-avg-val{font-size:28px}
+.lay-atmo .atmo-list{display:grid;gap:5px}.lay-atmo .atmo-list.two{grid-template-columns:1fr 1fr;gap:6px 18px}
+.lay-atmo .t-row{padding:6.5px 10px;border-radius:8px;background:var(--c-surface);border:1px solid var(--c-border)}
+@media(max-width:600px){.lay-atmo .atmo-hd{flex-direction:column;align-items:flex-start}.lay-atmo .atmo-list.two{grid-template-columns:1fr}}
+
+/* 14. GALLERY (Giant Square Art + 2-Col Tracks Underneath) */
+.lay-gallery{max-width:780px}
+.lay-gallery .gal-hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--c-border)}
+.lay-gallery .c-cover{width:310px;height:310px;border-radius:16px;box-shadow:0 18px 44px rgba(0,0,0,.3)}
+.lay-gallery .gal-bar{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+.lay-gallery .c-avg-box{padding:8px 16px}
+.lay-gallery .c-avg-val{font-size:24px}
+.lay-gallery .gal-cols{display:grid;grid-template-columns:1fr 1fr;gap:6px 22px}
+.lay-gallery .t-row{padding:6.5px 9px;border-radius:8px;background:var(--c-surface);border:1px solid var(--c-border)}
+@media(max-width:600px){.lay-gallery .c-cover{width:240px;height:240px}.lay-gallery .gal-cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="drag-overlay"><div class="drag-box"><h2>Drop Album Folder or Audio Files</h2><p>Reads Artist, Album, Year, Tracklist &amp; Cover locally</p></div></div>
+<div id="toast" class="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ═════════════ STORAGE, SETTINGS & SYNC STATE ═════════════ */
+const STORE_KEY = "album-rater-studio-v1";
+const DEFAULT_SETTINGS = {
+  uiTheme: "auto", cardLayout: "side", cardTheme: "midnight",
+  showYear: true, highlightEnabled: false, highlightThreshold: 3.5, highlightStyle: "spotlight",
+  scoreColorMode: "semantic", decimalMode: "clean", sortMode: "track",
+  showBestTrack: false, showDate: false, showDistribution: false, showNote: false,
+  pngRatio: "auto", syncToken: "", syncGistId: ""
+};
+let db = { albums: [], deleted: [], openId: null, view: "home", dirty: false, lastSync: 0, settings: { ...DEFAULT_SETTINGS } };
+let syncStatus = "idle"; // idle | syncing | ok | err
+
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      const p = JSON.parse(raw);
+      if(p && Array.isArray(p.albums)){
+        db.albums = p.albums; db.deleted = Array.isArray(p.deleted) ? p.deleted : [];
+        db.openId = p.openId || null; db.view = p.view || "home";
+        db.dirty = !!p.dirty; db.lastSync = p.lastSync || 0;
+        db.settings = { ...DEFAULT_SETTINGS, ...(p.settings || {}) };
+        return;
+      }
+    }
+    const oldRaw = localStorage.getItem("album-rating-v2");
+    if(oldRaw){
+      const old = JSON.parse(oldRaw);
+      if(old && Array.isArray(old.albums) && old.albums.length){
+        db.albums = old.albums.map(a => {
+          const sp = splitArtistAlbum(a.name || "Album");
+          return { id: String(a.id || Date.now() + Math.random()), artist: sp.artist, album: sp.album, year: sp.year, cover: "", note: "", auto: !!a.auto, createdAt: a.id || Date.now(), updatedAt: Date.now(), songs: (a.songs || []).map(s => ({ n: stripExt(s.n || ""), s: s.s })) };
+        });
+        saveDB(false);
+      }
+    }
+  }catch(e){}
+}
+
+function saveDB(markDirty = true){
+  if(markDirty && db.settings.syncToken) db.dirty = true;
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
+  catch(e){ toast("Storage full — export backup or clear old covers"); }
+}
+
+function touchAlbum(a){ if(a) a.updatedAt = Date.now(); }
+
+function applyUITheme(){
+  const t = db.settings.uiTheme || "auto", r = document.documentElement;
+  if(t === "auto") r.removeAttribute("data-ui"); else r.setAttribute("data-ui", t);
+}
+
+/* ═════════════ GITHUB GIST TWO-WAY SYNC (OFFLINE-SAFE) ═════════════ */
+const GIST_LIB_FILE = "album-rater-library.json";
+const GIST_COV_FILE = "album-rater-covers.json";
+
+async function ghFetch(path, token, opts = {}){
+  const headers = { "Accept": "application/vnd.github+json", "Authorization": "Bearer " + token.trim() };
+  if(opts.body) headers["Content-Type"] = "application/json";
+  const r = await fetch("https://api.github.com" + path, { ...opts, headers, cache: "no-store" });
+  if(!r.ok){
+    let msg = `GitHub HTTP ${r.status}`;
+    try{ const j = await r.json(); if(j && j.message) msg = j.message; }catch(e){}
+    throw new Error(msg);
+  }
+  return await r.json();
+}
+
+async function readGistFileContent(fileObj){
+  if(!fileObj) return null;
+  if(!fileObj.truncated && typeof fileObj.content === "string") return fileObj.content;
+  if(fileObj.raw_url){
+    const r = await fetch(fileObj.raw_url, { cache: "no-store" });
+    if(r.ok) return await r.text();
+  }
+  return null;
+}
+
+async function ensureSyncGist(token){
+  if(db.settings.syncGistId) return db.settings.syncGistId;
+  const list = await ghFetch("/gists?per_page=50", token);
+  const found = (list || []).find(g => g.files && g.files[GIST_LIB_FILE]);
+  if(found){ db.settings.syncGistId = found.id; saveDB(false); return found.id; }
+  const created = await ghFetch("/gists", token, {
+    method: "POST",
+    body: JSON.stringify({
+      description: "Album Rater Sync Vault",
+      public: false,
+      files: {
+        [GIST_LIB_FILE]: { content: JSON.stringify({ v: 1, albums: [], deleted: [] }) },
+        [GIST_COV_FILE]: { content: "{}" }
+      }
+    })
+  });
+  db.settings.syncGistId = created.id;
+  saveDB(false);
+  return created.id;
+}
+
+async function syncWithGist(){
+  const token = (db.settings.syncToken || "").trim();
+  if(!token){ toast("Configure GitHub Token in Settings first"); return; }
+  if(syncStatus === "syncing") return;
+  syncStatus = "syncing"; render();
+  try{
+    const gistId = await ensureSyncGist(token);
+    const gist = await ghFetch(`/gists/${gistId}`, token);
+    const libStr = await readGistFileContent(gist.files && gist.files[GIST_LIB_FILE]);
+    const covStr = await readGistFileContent(gist.files && gist.files[GIST_COV_FILE]);
+    const remLib = libStr ? JSON.parse(libStr) : { albums: [], deleted: [] };
+    const remCov = covStr ? JSON.parse(covStr) : {};
+
+    // Build unified deletion map (newest tombstone per id)
+    const delMap = new Map();
+    [...(db.deleted || []), ...(remLib.deleted || [])].forEach(d => {
+      if(!d || !d.id) return;
+      const prev = delMap.get(d.id) || 0;
+      if((d.at || 0) > prev) delMap.set(d.id, d.at || 0);
+    });
+
+    // Build album map by id
+    const albMap = new Map();
+    const putAlb = (src, isRemote) => {
+      if(!src || !src.id) return;
+      const upd = src.updatedAt || src.createdAt || 0;
+      const delAt = delMap.get(src.id) || 0;
+      if(delAt > upd) return; // Deleted more recently
+      const cover = src.cover || (isRemote ? (remCov[src.id] || "") : "");
+      const normSrc = { ...src, cover, updatedAt: upd };
+      const cur = albMap.get(src.id);
+      if(!cur){ albMap.set(src.id, normSrc); return; }
+      const win = upd >= (cur.updatedAt || 0) ? normSrc : cur;
+      const lose = win === normSrc ? cur : normSrc;
+      albMap.set(src.id, { ...win, cover: win.cover || lose.cover || "" });
+    };
+
+    db.albums.forEach(a => putAlb(a, false));
+    (remLib.albums || []).forEach(a => putAlb(a, true));
+
+    const mergedAlbums = [...albMap.values()].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    const cutoff = Date.now() - 90 * 86400000;
+    const mergedDeleted = [...delMap.entries()].filter(([, at]) => at > cutoff).map(([id, at]) => ({ id, at }));
+
+    // Separate text metadata & dataURL covers cleanly so library JSON stays tiny
+    const remoteAlbumsClean = mergedAlbums.map(a => {
+      const c = { ...a };
+      if(c.cover && c.cover.startsWith("data:")) c.cover = "";
+      return c;
+    });
+    const remoteCovers = {};
+    mergedAlbums.forEach(a => {
+      if(a.cover && a.cover.startsWith("data:") && a.cover.length < 180000) remoteCovers[a.id] = a.cover;
+    });
+
+    await ghFetch(`/gists/${gistId}`, token, {
+      method: "PATCH",
+      body: JSON.stringify({
+        files: {
+          [GIST_LIB_FILE]: { content: JSON.stringify({ v: 1, albums: remoteAlbumsClean, deleted: mergedDeleted }) },
+          [GIST_COV_FILE]: { content: JSON.stringify(remoteCovers) }
+        }
+      })
+    });
+
+    // Only commit merged state locally AFTER remote PATCH succeeded
+    db.albums = mergedAlbums;
+    db.deleted = mergedDeleted;
+    db.dirty = false;
+    db.lastSync = Date.now();
+    if(db.openId && !curAlbum()) db.openId = null;
+    saveDB(false);
+    syncStatus = "ok";
+    toast(`Synced (${mergedAlbums.length} albums)`);
+  }catch(e){
+    syncStatus = "err";
+    toast("Sync failed (kept local): " + (e.message || "Network error"), 3400);
+  }
+  render();
+}
+
+/* ═════════════ UTILITIES ═════════════ */
+const AUDIO_EXT = /\.(mp3|m4a|m4b|mp4|flac|wav|wave|aac|ogg|oga|opus|wma|alac|aif|aiff|ape|wv|mka)\s*$/i;
+const stripExt = s => String(s || "").replace(AUDIO_EXT, "");
+const norm = s => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/&/g, " and ").replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\bthe\b/g, " ").replace(/\s+/g, " ").trim();
+function el(tag, cls, text){ const e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined && text !== null) e.textContent = String(text); return e; }
+let toastT = null;
+function toast(msg, ms = 2400){ const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), ms); }
+function copyText(txt, okMsg){
+  const fb = () => { const ta = document.createElement("textarea"); ta.value = txt; ta.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); let ok = false; try{ ok = document.execCommand("copy"); }catch(e){} document.body.removeChild(ta); toast(ok ? (okMsg || "Copied") : "Copy failed"); };
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast(okMsg || "Copied"), fb); else fb();
+}
+function cleanTrackLine(l){
+  l = String(l || "").replace(/\r/g, "").trim();
+  if(!l || /^total\s+(playing\s+)?(time|length)/i.test(l)) return "";
+  if(/^"?[A-Za-z]:[\\\/]/.test(l)) l = l.replace(/^"?.*[\\\/]/, "").replace(/"$/, "");
+  l = l.replace(/^\d{1,3}(\s*[.)]\s*|\s*[:\-–]\s+|\s*\t\s*)/, "");
+  const cells = l.split("\t").map(x => x.trim()).filter(Boolean);
+  l = cells.length ? cells[0] : "";
+  l = l.replace(/\s+show lyrics\s*$/i, "").replace(/\s*[(\[]?\d{1,2}:\d{2}(:\d{2})?[)\]]?\s*$/, "").replace(/^["“”]+|["“”]+$/g, "").trim();
+  return stripExt(l).trim();
+}
+function splitArtistAlbum(line){
+  let s = String(line || "").replace(/^["“”]+|["“”]+$/g, "").trim(), year = "";
+  const ym = s.match(/[\(\[]\s*((?:19|20)\d{2})\s*[\)\]]\s*$/);
+  if(ym){ year = ym[1]; s = s.slice(0, ym.index).trim(); }
+  const m = s.match(/^(.+?)\s+[—–-]\s+(.+)$/); if(m) return { artist: m[1].trim(), album: m[2].trim(), year };
+  const by = s.match(/^(.+?)\s+by\s+(.+)$/i); if(by) return { artist: by[2].trim(), album: by[1].trim(), year };
+  const col = s.match(/^([^:]+):\s+(.+)$/); if(col) return { artist: col[1].trim(), album: col[2].trim(), year };
+  return { artist: "", album: s, year };
+}
+function formatAlbumTitle(a, withYear){
+  const m = a.artist ? `${a.artist} — ${a.album || "Untitled"}` : (a.album || "Untitled Album");
+  return (withYear && a.year) ? `${m} (${a.year})` : m;
+}
+function fmtScore(s){
+  if(s === null || s === undefined) return "—";
+  if(s === "?") return "?";
+  if(typeof s === "number") return db.settings.decimalMode === "fixed2" ? s.toFixed(2) : String(s);
+  return String(s);
+}
+const pendingBlind = a => a.auto && a.songs.length && a.songs[a.songs.length - 1].s === null;
+function calcStat(a){
+  const r = a.songs.filter(s => s.s !== null), n = r.filter(s => typeof s.s === "number");
+  const sum = n.reduce((acc, x) => acc + x.s, 0), total = a.songs.length - (pendingBlind(a) ? 1 : 0);
+  return { rated: r.length, scored: n.length, ungraded: r.length - n.length, left: Math.max(0, total - r.length), total, avg: n.length ? (sum / n.length).toFixed(2) : "—" };
+}
+function parseScoreToken(v){
+  const t = String(v || "").trim();
+  if(!t || t === "—" || t === "-") return null;
+  if(t === "?") return "?";
+  const n = parseFloat(t);
+  return (!isNaN(n) && n >= 0 && n <= 5) ? Math.round(n * 100) / 100 : undefined;
+}
+function makePlaceholderCover(title){
+  const ini = ((String(title || "?").match(/[\p{L}\p{N}]+/gu) || ["?"]).slice(0, 2).map(w => w[0]).join("")).toUpperCase().replace(/[<>&"]/g, "");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f2430"/><stop offset="1" stop-color="#12141c"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/><text x="200" y="232" font-size="136" font-family="Arial,sans-serif" font-weight="700" fill="#94a3b8" text-anchor="middle">${ini || "?"}</text></svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+function resizeImage(src, maxDim = 560){
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      try{
+        const w = img.naturalWidth || 400, h = img.naturalHeight || 400, sc = Math.min(1, maxDim / Math.max(w, h));
+        const cw = Math.max(1, Math.round(w * sc)), ch = Math.max(1, Math.round(h * sc));
+        const cv = document.createElement("canvas"); cv.width = cw; cv.height = ch;
+        cv.getContext("2d").drawImage(img, 0, 0, cw, ch);
+        res(cv.toDataURL("image/jpeg", 0.84));
+      }catch(e){ res(src); }
+    };
+    img.onerror = () => res("");
+    img.src = src;
+  });
+}
+function readImageFile(file, cb){
+  if(!file) return;
+  const r = new FileReader(); r.onload = async () => cb(await resizeImage(r.result, 560)); r.readAsDataURL(file);
+}
+
+/* ═════════════ BINARY AUDIO TAG PARSER (M4A/MP4, MP3, FLAC) ═════════════ */
+const decUtf8 = new TextDecoder("utf-8", { fatal: false }), decLatin = new TextDecoder("iso-8859-1", { fatal: false });
+const ascii4 = (u, o) => String.fromCharCode(u[o], u[o+1], u[o+2], u[o+3]);
+const u32be = (u, o) => ((u[o]<<24)>>>0) + (u[o+1]<<16) + (u[o+2]<<8) + u[o+3];
+const u32le = (u, o) => u[o] + (u[o+1]<<8) + (u[o+2]<<16) + ((u[o+3]<<24)>>>0);
+const u16be = (u, o) => (u[o]<<8) + u[o+1];
+
+async function parseMP4(file, needCover){
+  const out = {}; let pos = 0, moov = null;
+  while(pos + 8 <= file.size){
+    const hdr = new Uint8Array(await file.slice(pos, Math.min(pos + 16, file.size)).arrayBuffer());
+    if(hdr.length < 8) break;
+    let sz = u32be(hdr, 0), hl = 8; const tp = ascii4(hdr, 4);
+    if(sz === 1 && hdr.length >= 16){ sz = u32be(hdr, 8) * 4294967296 + u32be(hdr, 12); hl = 16; }
+    else if(sz === 0) sz = file.size - pos;
+    if(sz < hl) break;
+    if(tp === "moov"){ moov = [pos + hl, pos + sz]; break; }
+    pos += sz;
+  }
+  if(!moov) return out;
+  const buf = new Uint8Array(await file.slice(moov[0], Math.min(moov[1], moov[0] + 6 * 1024 * 1024)).arrayBuffer());
+  const decT = (b, dt) => (dt === 2 ? new TextDecoder("utf-16be").decode(b) : decUtf8.decode(b)).replace(/\0+$/, "").trim();
+  function walk(st, en){
+    let p = st;
+    while(p + 8 <= en){
+      let sz = u32be(buf, p), hl = 8; const tp = ascii4(buf, p + 4);
+      if(sz === 1 && p + 16 <= en){ sz = u32be(buf, p + 8) * 4294967296 + u32be(buf, p + 12); hl = 16; }
+      else if(sz === 0) sz = en - p;
+      if(sz < hl || p + sz > en) break;
+      const bs = p + hl, be = p + sz;
+      if(tp === "udta") walk(bs, be);
+      else if(tp === "meta"){
+        const p16 = bs + 8 <= be ? ascii4(buf, bs + 8) : "", p12 = bs + 4 <= be ? ascii4(buf, bs + 4) : "";
+        walk((p16 === "hdlr" || p16 === "ilst") ? bs + 4 : (p12 === "hdlr" || p12 === "ilst") ? bs : bs + 4, be);
+      }else if(tp === "ilst"){
+        let ip = bs;
+        while(ip + 8 <= be){
+          const isz = u32be(buf, ip); if(isz < 8 || ip + isz > be) break;
+          const k = ascii4(buf, ip + 4); let dp = ip + 8;
+          while(dp + 8 <= ip + isz){
+            const dsz = u32be(buf, dp), dtp = ascii4(buf, dp + 4); if(dsz < 8 || dp + dsz > ip + isz) break;
+            if(dtp === "data" && dsz >= 16){
+              const dt = u32be(buf, dp + 8), pay = buf.subarray(dp + 16, dp + dsz);
+              if(k === "\xA9nam") out.title = decT(pay, dt);
+              else if(k === "\xA9ART") out.artist = decT(pay, dt);
+              else if(k === "aART") out.albumArtist = decT(pay, dt);
+              else if(k === "\xA9alb") out.album = decT(pay, dt);
+              else if(k === "\xA9day"){ const ym = decT(pay, dt).match(/\b(19\d{2}|20\d{2})\b/); if(ym) out.year = ym[1]; }
+              else if(k === "trkn" && pay.length >= 4) out.track = u16be(pay, 2);
+              else if(k === "disk" && pay.length >= 4) out.disc = u16be(pay, 2);
+              else if(k === "covr" && needCover && !out.coverBlob) out.coverBlob = new Blob([pay], { type: dt === 14 ? "image/png" : "image/jpeg" });
+            }
+            dp += dsz;
+          }
+          ip += isz;
+        }
+      }
+      p += sz;
+    }
+  }
+  walk(0, buf.length); return out;
+}
+function decID3(b){
+  if(!b.length) return "";
+  const enc = b[0], r = b.subarray(1); let s = "";
+  if(enc === 0) s = decLatin.decode(r);
+  else if(enc === 3) s = decUtf8.decode(r);
+  else if(enc === 1){
+    if(r.length >= 2 && r[0] === 0xFF && r[1] === 0xFE) s = new TextDecoder("utf-16le").decode(r.subarray(2));
+    else if(r.length >= 2 && r[0] === 0xFE && r[1] === 0xFF) s = new TextDecoder("utf-16be").decode(r.subarray(2));
+    else s = new TextDecoder("utf-16le").decode(r);
+  }else if(enc === 2) s = new TextDecoder("utf-16be").decode(r);
+  else s = decUtf8.decode(b);
+  return s.replace(/\0+$/, "").trim();
+}
+async function parseMP3(file, needCover){
+  const out = {}, head = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+  if(head.length >= 10 && head[0] === 0x49 && head[1] === 0x44 && head[2] === 0x33){
+    const ver = head[3], tagSz = ((head[6]&0x7f)<<21)|((head[7]&0x7f)<<14)|((head[8]&0x7f)<<7)|(head[9]&0x7f);
+    const buf = new Uint8Array(await file.slice(10, Math.min(file.size, 10 + tagSz, 8 * 1024 * 1024)).arrayBuffer());
+    let p = 0;
+    while(p < buf.length && buf[p] !== 0){
+      let id, sz, hsz, fl = 0;
+      if(ver === 2){ if(p + 6 > buf.length) break; id = String.fromCharCode(buf[p], buf[p+1], buf[p+2]); sz = (buf[p+3]<<16)|(buf[p+4]<<8)|buf[p+5]; hsz = 6; }
+      else{ if(p + 10 > buf.length) break; id = ascii4(buf, p); sz = ver === 4 ? ((buf[p+4]&0x7f)<<21)|((buf[p+5]&0x7f)<<14)|((buf[p+6]&0x7f)<<7)|(buf[p+7]&0x7f) : u32be(buf, p + 4); fl = buf[p+9]; hsz = 10; }
+      if(sz <= 0 || p + hsz + sz > buf.length) break;
+      const pay = buf.subarray(p + hsz + (ver === 4 && (fl & 1) ? 4 : 0), p + hsz + sz);
+      if(id === "TIT2" || id === "TT2") out.title = decID3(pay);
+      else if(id === "TPE1" || id === "TP1") out.artist = decID3(pay);
+      else if(id === "TPE2" || id === "TP2") out.albumArtist = decID3(pay);
+      else if(id === "TALB" || id === "TAL") out.album = decID3(pay);
+      else if(id === "TDRC" || id === "TYER" || id === "TYE"){ const ym = decID3(pay).match(/\b(19\d{2}|20\d{2})\b/); if(ym && !out.year) out.year = ym[1]; }
+      else if(id === "TRCK" || id === "TRK"){ const n = parseInt(decID3(pay), 10); if(!isNaN(n)) out.track = n; }
+      else if(id === "TPOS" || id === "TPA"){ const n = parseInt(decID3(pay), 10); if(!isNaN(n)) out.disc = n; }
+      else if((id === "APIC" || id === "PIC") && needCover && !out.coverBlob && pay.length > 8){
+        const enc = pay[0]; let k = 1, mime = "image/jpeg";
+        if(id === "PIC"){ mime = String.fromCharCode(pay[1], pay[2], pay[3]).toUpperCase() === "PNG" ? "image/png" : "image/jpeg"; k = 5; }
+        else{ while(k < pay.length && pay[k] !== 0) k++; mime = decLatin.decode(pay.subarray(1, k)).toLowerCase() || "image/jpeg"; if(mime === "jpg" || mime === "image/jpg") mime = "image/jpeg"; k += 2; }
+        if(enc === 1 || enc === 2){ while(k + 1 < pay.length && !(pay[k] === 0 && pay[k+1] === 0)) k += 2; k += 2; }
+        else{ while(k < pay.length && pay[k] !== 0) k++; k += 1; }
+        if(k < pay.length) out.coverBlob = new Blob([pay.subarray(k)], { type: mime });
+      }
+      p += hsz + sz;
+    }
+    return out;
+  }
+  if(file.size >= 128){
+    const tail = new Uint8Array(await file.slice(file.size - 128, file.size).arrayBuffer());
+    if(tail[0] === 0x54 && tail[1] === 0x41 && tail[2] === 0x47){
+      out.title = decLatin.decode(tail.subarray(3, 33)).replace(/\0+$/, "").trim();
+      out.artist = decLatin.decode(tail.subarray(33, 63)).replace(/\0+$/, "").trim();
+      out.album = decLatin.decode(tail.subarray(63, 93)).replace(/\0+$/, "").trim();
+      const ym = decLatin.decode(tail.subarray(93, 97)).match(/\b(19\d{2}|20\d{2})\b/); if(ym) out.year = ym[1];
+      if(tail[125] === 0 && tail[126] > 0) out.track = tail[126];
+    }
+  }
+  return out;
+}
+async function parseFLAC(file, needCover){
+  const out = {}; let pos = 4;
+  while(pos + 4 <= file.size){
+    const bh = new Uint8Array(await file.slice(pos, pos + 4).arrayBuffer()); if(bh.length < 4) break;
+    const isLast = (bh[0] & 0x80) !== 0, bt = bh[0] & 0x7F, bl = (bh[1]<<16)|(bh[2]<<8)|bh[3]; pos += 4;
+    if(bt === 4 && bl > 8 && bl < 2 * 1024 * 1024){
+      const v = new Uint8Array(await file.slice(pos, pos + bl).arrayBuffer()); let p = 4 + u32le(v, 0);
+      if(p + 4 <= v.length){
+        const cnt = u32le(v, p); p += 4;
+        for(let i = 0; i < cnt && p + 4 <= v.length; i++){
+          const sl = u32le(v, p); p += 4; if(p + sl > v.length) break;
+          const kv = decUtf8.decode(v.subarray(p, p + sl)); p += sl;
+          const eq = kv.indexOf("=");
+          if(eq > 0){
+            const k = kv.slice(0, eq).toUpperCase(), val = kv.slice(eq + 1).trim();
+            if(k === "TITLE") out.title = val; else if(k === "ARTIST") out.artist = val;
+            else if(k === "ALBUMARTIST" || k === "ALBUM ARTIST") out.albumArtist = val; else if(k === "ALBUM") out.album = val;
+            else if(k === "DATE" || k === "YEAR"){ const ym = val.match(/\b(19\d{2}|20\d{2})\b/); if(ym && !out.year) out.year = ym[1]; }
+            else if(k === "TRACKNUMBER"){ const n = parseInt(val, 10); if(!isNaN(n)) out.track = n; }
+            else if(k === "DISCNUMBER"){ const n = parseInt(val, 10); if(!isNaN(n)) out.disc = n; }
+          }
+        }
+      }
+    }else if(bt === 6 && needCover && !out.coverBlob && bl > 32 && bl < 8 * 1024 * 1024){
+      const pb = new Uint8Array(await file.slice(pos, pos + bl).arrayBuffer()); let p = 4;
+      const ml = u32be(pb, p); p += 4; const mime = decLatin.decode(pb.subarray(p, p + ml)) || "image/jpeg"; p += ml;
+      const dl = u32be(pb, p); p += 4 + dl + 16;
+      if(p + 4 <= pb.length){ const il = u32be(pb, p); p += 4; if(p + il <= pb.length) out.coverBlob = new Blob([pb.subarray(p, p + il)], { type: mime }); }
+    }
+    pos += bl; if(isLast) break;
+  }
+  return out;
+}
+async function readAudioTags(file, needCover){
+  const h = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  if(h.length >= 8 && ascii4(h, 4) === "ftyp") return parseMP4(file, needCover);
+  if(h.length >= 4 && ascii4(h, 0) === "fLaC") return parseFLAC(file, needCover);
+  if(h.length >= 3 && ((h[0] === 0x49 && h[1] === 0x44 && h[2] === 0x33) || /\.mp3$/i.test(file.name))) return parseMP3(file, needCover);
+  return {};
+}
+async function parseDroppedFiles(fileList, folderHint = ""){
+  const all = Array.from(fileList || []), audio = all.filter(f => AUDIO_EXT.test(f.name));
+  if(!audio.length) return null;
+  const imgs = all.filter(f => /\.(jpe?g|png|webp)$/i.test(f.name));
+  const folderCover = imgs.find(f => /^(cover|folder|front|album|artwork|thumb)/i.test(f.name)) || imgs[0] || null;
+  let coverBlob = null, foundYear = "";
+  const tracks = [], artistF = new Map(), albumF = new Map(), aArtistF = new Map();
+  for(const f of audio){
+    const t = await readAudioTags(f, !coverBlob && !folderCover);
+    if(t.coverBlob && !coverBlob) coverBlob = t.coverBlob;
+    if(t.year && !foundYear) foundYear = t.year;
+    if(t.albumArtist) aArtistF.set(t.albumArtist, (aArtistF.get(t.albumArtist) || 0) + 1);
+    if(t.artist) artistF.set(t.artist, (artistF.get(t.artist) || 0) + 1);
+    if(t.album) albumF.set(t.album, (albumF.get(t.album) || 0) + 1);
+    const fnM = f.name.match(/^(\d{1,3})\s*[-._)\]\s]/);
+    tracks.push({ disc: t.disc || 1, track: t.track || (fnM ? parseInt(fnM[1], 10) : 9999), fn: f.name, n: stripExt(t.title || cleanTrackLine(f.name) || stripExt(f.name)) });
+  }
+  tracks.sort((a, b) => (a.disc - b.disc) || (a.track - b.track) || a.fn.localeCompare(b.fn, undefined, { numeric: true }));
+  const topKey = m => { let b = "", mx = 0; m.forEach((v, k) => { if(v > mx){ mx = v; b = k; } }); return b; };
+  let artist = topKey(aArtistF) || topKey(artistF), album = topKey(albumF), year = foundYear;
+  if((!album || !artist) && folderHint){
+    const h = splitArtistAlbum(folderHint);
+    if(!artist && h.artist) artist = h.artist; if(!album && h.album) album = h.album; if(!year && h.year) year = h.year;
+  }
+  let cover = "";
+  const imgSrc = coverBlob || folderCover;
+  if(imgSrc){ const u = URL.createObjectURL(imgSrc); cover = await resizeImage(u, 560); URL.revokeObjectURL(u); }
+  return { artist, album: album || "Untitled Album", year, cover, songs: tracks.map(t => ({ n: t.n, s: null })) };
+}
+async function collectFilesFromDT(dt){
+  const files = []; let folderHint = "";
+  const entries = (dt.items ? Array.from(dt.items) : []).map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  if(entries.length){
+    if(entries[0].isDirectory) folderHint = entries[0].name;
+    const walk = async en => {
+      if(en.isFile) await new Promise(res => en.file(f => { files.push(f); res(); }, res));
+      else if(en.isDirectory){
+        const rd = en.createReader();
+        while(true){ const b = await new Promise(res => rd.readEntries(res, () => res([]))); if(!b || !b.length) break; for(const s of b) await walk(s); }
+      }
+    };
+    for(const e of entries) await walk(e);
+  }else if(dt.files) files.push(...dt.files);
+  return { files, folderHint };
+}
+
+/* ═════════════ ONLINE SEARCH & COVER ENGINE ═════════════ */
+const EDITION_RE = /\s*[\(\[][^\)\]]*(deluxe|edition|remaster|version|expanded|anniversary|bonus|explicit|mono|stereo)[^\)\]]*[\)\]]|\s+[-–]\s+(deluxe|remaster|\d{4}\s+remaster).*$/gi;
+const stripEdition = s => (s || "").replace(EDITION_RE, "").trim();
+const lev = (a, b) => { const m = a.length, n = b.length; if(!m) return n; if(!n) return m; let p = Array.from({ length: n + 1 }, (_, j) => j); for(let i = 1; i <= m; i++){ const c = [i]; for(let j = 1; j <= n; j++) c[j] = Math.min(p[j]+1, c[j-1]+1, p[j-1]+(a[i-1]===b[j-1]?0:1)); p = c; } return p[n]; };
+const wsim = (a, b) => 1 - lev(a, b) / Math.max(a.length, b.length);
+const strSim = (a, b) => { a = norm(stripEdition(a)); b = norm(stripEdition(b)); if(!a || !b) return 0; if(a === b) return 1; const wa = a.split(" "), wb = b.split(" "); let hit = 0; wa.forEach(w => { let bt = 0; wb.forEach(v => { bt = Math.max(bt, wsim(w, v)); }); if(bt >= .75) hit += bt; }); return Math.max(wsim(a, b), (2*hit)/(wa.length+wb.length), (a.includes(b)||b.includes(a)) ? .85 : 0); };
+const scoreResult = (r, pairs, raw = "") => {
+  let b = Math.max(strSim(raw, `${r.artist} ${r.album}`), strSim(raw, `${r.album} ${r.artist}`)) * 0.95;
+  pairs.forEach(c => { if(!c.rawQuery && c.album) b = Math.max(b, c.artist ? .6*strSim(r.album, c.album) + .4*strSim(r.artist, c.artist) : strSim(r.album, c.album) * .9); });
+  if(r.src === "mb") b += (r.official ? .03 : 0) + (r.isAlbum ? .02 : 0);
+  if(/deluxe|remaster|expanded|anniversary|bonus/i.test(r.album || "") && !/deluxe|remaster|expanded|anniversary|bonus/i.test(raw)) b -= .04;
+  return b;
+};
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function jget(url){
+  for(let i = 0; i < 2; i++){
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 9000);
+    try{ const r = await fetch(url, { signal: ctl.signal }); if(r.status === 503 && i === 0){ await sleep(1250); continue; } if(!r.ok) return null; return await r.json(); }catch(e){ return null; }finally{ clearTimeout(t); }
+  }
+  return null;
+}
+const MB_API = "https://musicbrainz.org/ws/2/";
+const lucene = (s, fz) => (s || "").split(/\s+/).map(w => w.replace(/[^\p{L}\p{N}]/gu, "")).filter(Boolean).map(w => fz && w.length > 3 ? w + "~" : w).join(" ");
+function buildSearchCands(inp){
+  inp = inp.trim(); if(inp.includes("spotify.com")) return [{ type: "spotify", raw: inp }];
+  const c = [], p = splitArtistAlbum(inp);
+  if(p.artist && p.album){ c.push({ artist: p.artist, album: p.album }, { artist: p.album, album: p.artist }); }
+  else c.push({ artist: "", album: p.album || inp });
+  c.push({ artist: "", album: inp, rawQuery: true }); return c;
+}
+async function searchMB(cands, raw){
+  const qs = [];
+  cands.forEach(c => { if(c.rawQuery || !c.album) return; const al = stripEdition(c.album); qs.push(...(c.artist ? [`release:"${al}" AND artist:"${c.artist}"`, `release:(${lucene(al,1)}) AND artist:(${lucene(c.artist,1)})`] : [`release:"${al}"`, `release:(${lucene(al,1)})`])); });
+  qs.push(lucene(stripEdition(raw), 1));
+  const seen = new Set(), out = [];
+  for(const q of qs.filter(q => q && !seen.has(q) && seen.add(q)).slice(0, 4)){
+    const d = await jget(`${MB_API}release?query=${encodeURIComponent(q)}&fmt=json&limit=12`);
+    (d?.releases || []).forEach(r => out.push({
+      src: "mb", id: r.id, rgid: r["release-group"]?.id, album: r.title,
+      artist: (r["artist-credit"] || []).map(a => (a.name || a.artist?.name || "") + (a.joinphrase || "")).join(""),
+      year: (r["release-group"]?.["first-release-date"] || r.date || "").slice(0, 4),
+      count: r["track-count"], official: r.status === "Official", isAlbum: r["release-group"]?.["primary-type"] === "Album"
+    }));
+    if(out.some(r => scoreResult(r, cands, raw) >= .9)) break;
+    await sleep(1050);
+  }
+  return out;
+}
+async function searchItunes(terms){
+  const res = await Promise.all(terms.map(t => jget(`https://itunes.apple.com/search?term=${encodeURIComponent(t)}&entity=album&limit=12`)));
+  return res.flatMap(d => (d?.results || []).filter(r => r.collectionId).map(r => ({ src: "it", id: r.collectionId, album: r.collectionName, artist: r.artistName, year: (r.releaseDate || "").slice(0, 4), count: r.trackCount, cover: (r.artworkUrl100 || "").replace("100x100bb", "600x600bb") })));
+}
+function deezerSearch(q){
+  return new Promise(res => {
+    const cb = "dz" + Math.random().toString(36).slice(2), s = document.createElement("script");
+    const done = v => { clearTimeout(t); delete window[cb]; s.remove(); res(v); };
+    const t = setTimeout(() => done([]), 6500);
+    window[cb] = d => done(d?.data || []); s.onerror = () => done([]);
+    s.src = `https://api.deezer.com/search/album?q=${encodeURIComponent(q)}&limit=8&output=jsonp&callback=${cb}`; document.head.appendChild(s);
+  });
+}
+async function searchAlbumsOnline(raw){
+  let cands = buildSearchCands(raw), qRaw = raw, spCover = "";
+  if(cands[0]?.type === "spotify"){
+    const sp = await jget(`https://open.spotify.com/oembed?url=${encodeURIComponent(cands[0].raw)}`);
+    if(!sp?.title) throw new Error("Could not read Spotify link. Try Artist - Album.");
+    cands = [{ artist: "", album: sp.title }]; qRaw = sp.title; spCover = sp.thumbnail_url || "";
+  }
+  const terms = [...new Set([...cands.filter(c => !c.rawQuery && c.album).map(c => `${c.artist || ""} ${stripEdition(c.album)}`.trim()), stripEdition(qRaw)].filter(Boolean))].slice(0, 3);
+  const [it, mb] = await Promise.all([searchItunes(terms), searchMB(cands, qRaw)]);
+  const map = new Map();
+  [...mb, ...it].forEach(r => {
+    r.score = scoreResult(r, cands, qRaw);
+    const k = norm(stripEdition(r.album)) + "|" + norm(r.artist), e = map.get(k);
+    if(!e) map.set(k, r);
+    else if(r.src !== e.src){ const m = e.src === "mb" ? e : r, i = e.src === "it" ? e : r; m.cover = m.cover || i.cover; m.itId = i.id; if(!m.year && i.year) m.year = i.year; map.set(k, m); }
+    else if(r.score > e.score) map.set(k, { ...r, cover: r.cover || e.cover, itId: r.itId || e.itId, year: r.year || e.year });
+  });
+  return { results: [...map.values()].sort((a, b) => b.score - a.score), cands, qRaw, spCover };
+}
+async function loadReleaseTracks(p){
+  if(p.src === "mb"){
+    const d = await jget(`${MB_API}release/${p.id}?inc=recordings+release-groups&fmt=json`);
+    const t = (d?.media || []).flatMap(m => (m.tracks || []).map(x => x.title));
+    const y = (d?.["release-group"]?.["first-release-date"] || d?.date || "").slice(0, 4);
+    if(t.length) return { tracks: t, year: y || p.year || "" };
+    if(!p.itId) return null;
+  }
+  const d = await jget(`https://itunes.apple.com/lookup?id=${p.itId || p.id}&entity=song&limit=200`);
+  const list = (d?.results || []).filter(x => x.wrapperType === "track").sort((a, b) => (a.discNumber - b.discNumber) || (a.trackNumber - b.trackNumber)).map(x => x.trackName);
+  return list.length ? { tracks: list, year: p.year || "" } : null;
+}
+const probeImg = u => new Promise(res => { if(!u) return res(false); const i = new Image(), t = setTimeout(() => res(false), 7500); i.onload = () => { clearTimeout(t); res(i.naturalWidth > 50); }; i.onerror = () => { clearTimeout(t); res(false); }; i.src = u; });
+async function caaCover(k, id){ const d = await jget(`https://coverartarchive.org/${k}/${id}`); const im = d?.images || [], x = im.find(i => i.front) || im[0]; return x ? (x.thumbnails?.["500"] || x.thumbnails?.large || x.image) : ""; }
+async function fetchCoverOptions(artist, album, cands = [], raw = ""){
+  const pairs = [...(album ? [{ artist, album }] : []), ...cands];
+  const terms = [...new Set([...pairs.filter(c => !c.rawQuery && c.album).map(c => `${c.artist || ""} ${stripEdition(c.album)}`.trim()), stripEdition(raw)].filter(Boolean))].slice(0, 3);
+  const [it, dz] = await Promise.all([searchItunes(terms), Promise.all(terms.slice(0, 2).map(deezerSearch)).then(a => a.flat())]);
+  const all = [...it.map(r => ({ url: r.cover, album: r.album, artist: r.artist, year: r.year, src: "iTunes" })), ...dz.map(r => ({ url: r.cover_xl || r.cover_big, album: r.title, artist: r.artist?.name || "", year: "", src: "Deezer" }))].filter(o => o.url);
+  const seen = new Set();
+  return all.map(o => ({ ...o, score: scoreResult(o, pairs, raw) })).sort((a, b) => b.score - a.score).filter(o => !seen.has(o.url) && seen.add(o.url));
+}
+async function findBestCover({ mbid, rgid, known, artist, album, cands = [], raw = "" }){
+  const ok = async u => (u && await probeImg(u)) ? u : "";
+  const early = (mbid && await ok(await caaCover("release", mbid))) || (rgid && await ok(await caaCover("release-group", rgid))) || await ok(known);
+  if(early) return early;
+  const opts = await fetchCoverOptions(artist, album, cands, raw);
+  for(const o of opts.slice(0, 4)){ if(o.score < 0.52) break; if(await probeImg(o.url)) return o.url; }
+  return "";
+}
+
+/* ═════════════ TRANSFER & SMART PARSE ═════════════ */
+function encodePayload(obj){
+  const bytes = new TextEncoder().encode(JSON.stringify(obj)); let bin = "";
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function decodePayload(str){
+  const b64 = str.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((str.length + 3) % 4);
+  const bin = atob(b64), bytes = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+function buildTransferText(a){
+  const head = formatAlbumTitle(a, true);
+  const lines = a.songs.filter(s => !(a.auto && s.s === null && !s.n)).map((s, i) => {
+    const nm = s.n || `Track ${i + 1}`; return s.s === null ? nm : `${nm} | ${s.s}`;
+  });
+  return [head, ...lines].join("\n");
+}
+function buildShareLink(a){
+  if(!/^https?:/.test(location.protocol)) return "";
+  return `${location.origin}${location.pathname}#d=${encodePayload({ v: 1, ar: a.artist || "", al: a.album || "", yr: a.year || "", au: a.auto ? 1 : 0, t: a.songs.filter(s => !(a.auto && s.s === null && !s.n)).map(s => [s.n, s.s]) })}`;
+}
+function tryParseLink(txt){
+  const m = String(txt || "").match(/#d=([A-Za-z0-9\-_]+)/); if(!m) return null;
+  try{
+    const p = decodePayload(m[1]); if(!p || !Array.isArray(p.t)) return null;
+    return { artist: p.ar || "", album: p.al || "Untitled Album", year: p.yr || "", auto: !!p.au, songs: p.t.map(x => ({ n: String(x[0] || ""), s: x[1] === undefined ? null : x[1] })) };
+  }catch(e){ return null; }
+}
+function parseTransferBlock(raw){
+  const tr = String(raw || "").replace(/\r/g, "").trim(); if(!tr) return null;
+  const link = tryParseLink(tr); if(link) return { kind: "album", hasScores: link.songs.some(x => x.s !== null), data: link };
+  if(tr.startsWith("{")){ try{ const j = JSON.parse(tr); if(j && Array.isArray(j.albums)) return { kind: "backup", data: j }; }catch(e){} }
+  const lines = tr.split("\n").map(x => x.trim()).filter(Boolean); if(!lines.length) return null;
+  if(lines.every(l => parseScoreToken(l) !== undefined)) return { kind: "scores", scores: lines.map(parseScoreToken) };
+  if(lines.length === 1) return { kind: "single", line: lines[0] };
+  const head = splitArtistAlbum(lines[0]), songs = []; let hasScores = false;
+  for(const l of lines.slice(1)){
+    let tp = l, sv = null;
+    const sep = l.lastIndexOf("|") >= 0 ? l.lastIndexOf("|") : l.lastIndexOf("\t");
+    if(sep >= 0){ const ms = parseScoreToken(l.slice(sep + 1)); if(ms !== undefined){ tp = l.slice(0, sep); sv = ms; if(sv !== null) hasScores = true; } }
+    const cn = cleanTrackLine(tp);
+    if(cn || sv !== null) songs.push({ n: cn || `Track ${songs.length + 1}`, s: sv });
+  }
+  return { kind: "album", hasScores, data: { artist: head.artist, album: head.album || "Untitled Album", year: head.year, auto: songs.length === 0, songs } };
+}
+function findMatchingAlbum(inc){
+  const kAl = norm(stripEdition(inc.album)), kAr = norm(inc.artist); if(!kAl) return null;
+  return db.albums.find(a => {
+    if(norm(stripEdition(a.album)) !== kAl) return false;
+    const aAr = norm(a.artist);
+    return (kAr && aAr) ? (aAr === kAr || aAr.includes(kAr) || kAr.includes(aAr)) : true;
+  }) || null;
+}
+function importOrMergeAlbum(data, goStudio){
+  const ex = findMatchingAlbum(data), hasSc = data.songs.some(s => s.s !== null);
+  if(ex && hasSc && (calcStat(ex).rated === 0 || ex.songs.length === data.songs.length)){
+    if(data.year && !ex.year) ex.year = data.year;
+    if(data.artist && !ex.artist) ex.artist = data.artist;
+    const generic = data.songs.every(s => /^track\s+\d+$/i.test(s.n) || !s.n);
+    if(generic && ex.songs.length === data.songs.length) ex.songs.forEach((s, i) => s.s = data.songs[i].s);
+    else if(ex.songs.length === data.songs.length) ex.songs.forEach((s, i) => { if(data.songs[i].n) s.n = data.songs[i].n; s.s = data.songs[i].s; });
+    else ex.songs = data.songs;
+    ex.auto = !!data.auto; touchAlbum(ex);
+    db.openId = ex.id; db.view = (goStudio && calcStat(ex).rated > 0) ? "studio" : "rate"; saveDB();
+    toast(ex.cover ? "Merged with saved album & cover" : "Updated saved album"); return ex;
+  }
+  const now = Date.now();
+  const alb = { id: String(now + Math.floor(Math.random() * 999)), artist: data.artist || "", album: data.album || "Untitled Album", year: data.year || "", cover: data.cover || "", note: data.note || "", auto: !!data.auto, createdAt: now, updatedAt: now, songs: data.songs || [] };
+  db.albums.push(alb); db.openId = alb.id; db.view = (goStudio && calcStat(alb).rated > 0) ? "studio" : "rate"; saveDB();
+  return alb;
+}
+
+/* ═════════════ 36 CARD THEMES + COVER MATCH ═════════════ */
+const hexToRgba = (hex, a) => { const h = hex.replace("#", ""), n = h.length === 3 ? h.split("").map(c => c + c).join("") : h, v = parseInt(n, 16); return `rgba(${(v>>16)&255},${(v>>8)&255},${v&255},${a})`; };
+function makeTheme(id, name, bg, solidBg, ac, acInk, isLight = false, c = {}){
+  const tx = c.text || (isLight ? "#18181b" : "#f4f4f5"), mut = c.muted || (isLight ? "rgba(24,24,27,0.58)" : "rgba(244,244,245,0.60)");
+  const sf = c.surface || (isLight ? "rgba(0,0,0,0.045)" : "rgba(255,255,255,0.055)"), sf2 = c.surface2 || (isLight ? "rgba(0,0,0,0.085)" : "rgba(255,255,255,0.105)");
+  const bd = c.border || (isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)");
+  return { id, name, isLight, dot: ac, solidBg, vars: { "--c-bg": bg, "--c-solid-bg": solidBg, "--c-surface": sf, "--c-surface-2": sf2, "--c-border": bd, "--c-text": tx, "--c-muted": mut, "--c-accent": ac, "--c-accent-ink": acInk, "--c-hi-bg": hexToRgba(ac, isLight ? .18 : .22), "--c-hi-bd": hexToRgba(ac, isLight ? .55 : .58) } };
+}
+const CARD_THEMES = [
+  makeTheme("coverMatch", "Cover Match", "linear-gradient(145deg,#0f172a,#1e293b)", "#0b111e", "#38bdf8", "#071926", false),
+  makeTheme("midnight", "Midnight", "linear-gradient(155deg,#18181b,#09090b)", "#0a0a0c", "#f4f4f5", "#111111", false),
+  makeTheme("oled", "OLED Lime", "#000000", "#050505", "#a3e635", "#0c1402", false),
+  makeTheme("neonCyber", "Neon Cyber", "linear-gradient(135deg,#2e1065,#4c0519 52%,#0f172a)", "#120826", "#22d3ee", "#042029", false),
+  makeTheme("deepOcean", "Deep Ocean", "linear-gradient(145deg,#0c2442,#0f3b4a,#082f49)", "#071a2b", "#38bdf8", "#052030", false),
+  makeTheme("volcanic", "Volcanic", "linear-gradient(155deg,#1e1b18,#0f0d0c)", "#0d0b0a", "#f87171", "#1a0606", false),
+  makeTheme("emerald", "Emerald", "linear-gradient(145deg,#063324,#052e16,#0b1f17)", "#041c11", "#84cc16", "#0b1a02", false),
+  makeTheme("royalVelvet", "Royal Velvet", "linear-gradient(145deg,#2e1065,#1e1b4b,#3b0764)", "#170b33", "#c084fc", "#1c0533", false),
+  makeTheme("crimson", "Crimson Night", "linear-gradient(145deg,#450a0a,#2a0815,#09090b)", "#1f060a", "#fb7185", "#24040a", false),
+  makeTheme("matrix", "Matrix", "linear-gradient(160deg,#020b05,#05200d,#000000)", "#020c05", "#4ade80", "#021809", false),
+  makeTheme("arctic", "Arctic Night", "linear-gradient(145deg,#083344,#0f172a,#1e1b4b)", "#071b26", "#67e8f9", "#04232c", false),
+  makeTheme("graphiteGold", "Graphite & Gold", "linear-gradient(155deg,#1e293b,#0f172a)", "#0c1322", "#fbbf24", "#1f1502", false),
+  makeTheme("galaxy", "Galaxy", "linear-gradient(145deg,#1e1b4b,#311042,#05050a)", "#0d0a24", "#818cf8", "#0d0b2b", false),
+  makeTheme("infrared", "Infrared", "linear-gradient(145deg,#4c0519,#450a0a,#431407)", "#26050c", "#fb923c", "#240c02", false),
+  makeTheme("neonSign", "Neon Sign", "#050507", "#030305", "#e879f9", "#240329", false),
+  makeTheme("slateLime", "Slate & Lime", "linear-gradient(155deg,#1e293b,#111827)", "#0e1522", "#a3e635", "#0d1702", false),
+  makeTheme("cobalt", "Cobalt Steel", "linear-gradient(145deg,#082f49,#0f172a)", "#071829", "#38bdf8", "#041c2c", false),
+  makeTheme("tokyoRain", "Tokyo Rain", "linear-gradient(145deg,#17153b,#2e236c,#0d0c1d)", "#0e0c24", "#f472b6", "#2b061a", false),
+  makeTheme("espresso", "Espresso", "linear-gradient(150deg,#231710,#140c08)", "#120b07", "#f59e0b", "#1c1002", false),
+  makeTheme("synthwave", "Synthwave", "linear-gradient(140deg,#1a0b2e,#3a0ca3 55%,#7209b7)", "#17092b", "#ff6b9d", "#240410", false),
+  makeTheme("roseDark", "Rose Noir", "linear-gradient(145deg,#3b0722,#1f0818,#10050c)", "#170510", "#fda4af", "#26050b", false),
+  makeTheme("aurora", "Aurora", "linear-gradient(145deg,#064e3b,#115e59,#0f172a)", "#06261f", "#2dd4bf", "#04211e", false),
+  makeTheme("blueprint", "Blueprint", "linear-gradient(145deg,#1e3a8a,#172554)", "#111c45", "#67e8f9", "#082032", false, { surface:"rgba(255,255,255,0.08)", border:"rgba(103,232,249,0.28)" }),
+  makeTheme("tangerine", "Terracotta", "linear-gradient(145deg,#7c2d12,#431407)", "#381206", "#fde047", "#221b02", false),
+  makeTheme("tropical", "Tropical Dusk", "linear-gradient(135deg,#6d28d9,#be185d)", "#3e126b", "#fbcfe8", "#32071d", false),
+  makeTheme("sunset", "Sunset Blaze", "linear-gradient(140deg,#991b1b,#c2410c,#b45309)", "#5e150e", "#fef08a", "#262002", false),
+  makeTheme("monochrome", "Monochrome", "#ffffff", "#ececef", "#111827", "#ffffff", true, { border:"rgba(0,0,0,0.16)" }),
+  makeTheme("swiss", "Swiss Editorial", "#f5f4f0", "#e6e4de", "#dc2626", "#ffffff", true, { border:"rgba(0,0,0,0.14)" }),
+  makeTheme("vintage", "Vintage Paper", "linear-gradient(150deg,#f7eedc,#efe2c4)", "#e4d5b7", "#92400e", "#ffffff", true, { text:"#2d2014", muted:"rgba(45,32,20,0.62)", border:"rgba(120,68,25,0.22)" }),
+  makeTheme("cream", "Cream & Coffee", "linear-gradient(150deg,#fbf4e8,#f3e5cf)", "#e9d8be", "#c2410c", "#ffffff", true, { text:"#321f12", muted:"rgba(50,31,18,0.60)", border:"rgba(140,75,30,0.20)" }),
+  makeTheme("matcha", "Matcha", "linear-gradient(150deg,#eef5eb,#e2ede0)", "#d6e4d2", "#2f7a52", "#ffffff", true, { text:"#17281e", muted:"rgba(23,40,30,0.60)", border:"rgba(47,122,82,0.22)" }),
+  makeTheme("sakura", "Sakura", "linear-gradient(145deg,#fdf2f5,#fbe4ec)", "#f3d5e0", "#be185d", "#ffffff", true, { text:"#331422", muted:"rgba(51,20,34,0.60)", border:"rgba(190,24,93,0.20)" }),
+  makeTheme("pastel", "Pastel Dream", "linear-gradient(135deg,#f5ecfd,#e8f0fe)", "#e2ddf7", "#7c3aed", "#ffffff", true, { text:"#231942", muted:"rgba(35,25,66,0.60)" }),
+  makeTheme("iceFrost", "Ice Frost", "linear-gradient(145deg,#eef6fc,#ddecf9)", "#cfe2f2", "#0369a1", "#ffffff", true, { text:"#0f263a", muted:"rgba(15,38,58,0.60)" }),
+  makeTheme("sandstone", "Sandstone", "linear-gradient(150deg,#f6efe6,#eadccf)", "#dfd0c0", "#b45309", "#ffffff", true, { text:"#2e2116", muted:"rgba(46,33,22,0.60)" }),
+  makeTheme("lavender", "Lavender Mist", "linear-gradient(145deg,#f3effb,#eae1f8)", "#dfd4f2", "#6d28d9", "#ffffff", true, { text:"#271745", muted:"rgba(39,23,69,0.60)" })
+];
+
+const CARD_LAYOUTS = [
+  { id: "side", name: "Side by Side", icon: "◧", w: 820 },
+  { id: "center", name: "Centered", icon: "◻", w: 560 },
+  { id: "showcase", name: "Showcase", icon: "◈", w: 840 },
+  { id: "minimal", name: "Minimal", icon: "—", w: 620 },
+  { id: "lined", name: "Lined", icon: "≡", w: 640 },
+  { id: "digits", name: "Digits", icon: "12", w: 640 },
+  { id: "split", name: "2-Col Split", icon: "⊞", w: 860 },
+  { id: "splitSide", name: "Split Side", icon: "◫", w: 920 },
+  { id: "poster", name: "Poster", icon: "▣", w: 820 },
+  { id: "liner", name: "Liner Notes", icon: "▤", w: 660 },
+  { id: "bento", name: "Bento", icon: "▦", w: 840 },
+  { id: "compact", name: "Compact", icon: "▯", w: 460 },
+  { id: "atmo", name: "Atmosphere", icon: "✦", w: 780 },
+  { id: "gallery", name: "Gallery", icon: "❏", w: 780 }
+];
+
+const coverMatchCache = new Map();
+function extractCoverPalette(src){
+  if(!src || src.startsWith("data:image/svg")) return Promise.resolve(null);
+  if(coverMatchCache.has(src)) return Promise.resolve(coverMatchCache.get(src));
+  return new Promise(res => {
+    const img = new Image(); if(!src.startsWith("data:")) img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try{
+        const cv = document.createElement("canvas"); cv.width = 24; cv.height = 24;
+        const ctx = cv.getContext("2d"); ctx.drawImage(img, 0, 0, 24, 24);
+        const d = ctx.getImageData(0, 0, 24, 24).data;
+        let rS = 0, gS = 0, bS = 0, c = 0, vib = [56, 189, 248], bs = -1;
+        for(let i = 0; i < d.length; i += 4){
+          const r = d[i], g = d[i+1], b = d[i+2]; rS += r; gS += g; bS += b; c++;
+          const mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0, lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+          const sc = sat * (1 - Math.abs(lum - 0.58)); if(sc > bs){ bs = sc; vib = [r, g, b]; }
+        }
+        const ar = Math.round(rS/c), ag = Math.round(gS/c), ab = Math.round(bS/c);
+        const solidBg = `rgb(${Math.round(ar*.14+6)},${Math.round(ag*.14+6)},${Math.round(ab*.14+8)})`;
+        const bg1 = `rgb(${Math.round(ar*.18+8)},${Math.round(ag*.18+8)},${Math.round(ab*.18+10)})`;
+        const bg2 = `rgb(${Math.round(ar*.28+14)},${Math.round(ag*.28+14)},${Math.round(ab*.28+18)})`;
+        let [vr, vg, vb] = vib; const vL = .299*vr + .587*vg + .114*vb;
+        if(vL < 120){ const b = (145 - vL) / 255; vr = Math.min(255, Math.round(vr + (255-vr)*b)); vg = Math.min(255, Math.round(vg + (255-vg)*b)); vb = Math.min(255, Math.round(vb + (255-vb)*b)); }
+        const acHex = "#" + [vr, vg, vb].map(x => x.toString(16).padStart(2, "0")).join("");
+        const pal = makeTheme("coverMatch", "Cover Match", `linear-gradient(145deg,${bg1},${bg2})`, solidBg, acHex, (.299*vr+.587*vg+.114*vb) > 155 ? "#111111" : "#ffffff", false);
+        coverMatchCache.set(src, pal); res(pal);
+      }catch(e){ res(null); }
+    };
+    img.onerror = () => res(null); img.src = src;
+  });
+}
+
+function getScoreColor(s, theme){
+  if(s === null || s === "?" || s === undefined) return theme.vars["--c-muted"];
+  const m = db.settings.scoreColorMode;
+  if(m === "mono") return theme.vars["--c-text"];
+  if(m === "accent") return theme.vars["--c-accent"];
+  if(theme.isLight) return s >= 4.5 ? "#15803d" : s >= 3.5 ? "#4d7c0f" : s >= 2.5 ? "#b45309" : s >= 1.5 ? "#c2410c" : "#dc2626";
+  return s >= 4.5 ? "#4ade80" : s >= 3.5 ? "#a3e635" : s >= 2.5 ? "#facc15" : s >= 1.5 ? "#fb923c" : "#f87171";
+}
+
+/* ═════════════ SMART ASPECT-RATIO PNG EXPORT ═════════════ */
+const dataUrlCache = new Map();
+async function toInlineDataUrl(src){
+  if(!src || src.startsWith("data:")) return src;
+  if(dataUrlCache.has(src)) return dataUrlCache.get(src);
+  try{
+    const r = await fetch(src, { mode: "cors" }); if(!r.ok) throw 0;
+    const blob = await r.blob();
+    const du = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); });
+    dataUrlCache.set(src, du); return du;
+  }catch(e){ return null; }
+}
+
+async function resolveThemeForAlbum(a){
+  let th = CARD_THEMES.find(t => t.id === db.settings.cardTheme) || CARD_THEMES[1];
+  if(th.id === "coverMatch" && a.cover){
+    const pal = await extractCoverPalette(a.cover);
+    if(pal) th = pal;
+  }
+  return th;
+}
+
+async function renderCardPngBlob(a){
+  const ratio = db.settings.pngRatio || "auto";
+  const layObj = CARD_LAYOUTS.find(l => l.id === db.settings.cardLayout) || CARD_LAYOUTS[0];
+  const theme = await resolveThemeForAlbum(a);
+
+  // Target width independent of current device screen size
+  let targetW = layObj.w;
+  if(ratio === "portrait") targetW = 480;
+  else if(ratio === "square") targetW = Math.min(layObj.w, 680);
+  else if(ratio === "post") targetW = Math.min(layObj.w, 620);
+  else if(ratio === "wide") targetW = Math.max(layObj.w, 860);
+
+  // Measure cleanly offscreen at exact targetW
+  const sandbox = document.createElement("div");
+  sandbox.style.cssText = `position:fixed;left:-9999px;top:0;width:${targetW}px;visibility:hidden;pointer-events:none;z-index:-1`;
+  const card = buildCardDOM(a, theme);
+  card.style.maxWidth = "none";
+  card.style.width = targetW + "px";
+  card.style.boxShadow = "none";
+  sandbox.appendChild(card);
+  document.body.appendChild(sandbox);
+
+  const cw = Math.ceil(card.getBoundingClientRect().width);
+  const ch = Math.ceil(card.getBoundingClientRect().height);
+  document.body.removeChild(sandbox);
+
+  for(const img of card.querySelectorAll("img")){
+    const src = img.getAttribute("src");
+    if(src && !src.startsWith("data:")){
+      const du = await toInlineDataUrl(src);
+      if(du) img.setAttribute("src", du); else throw new Error("CORS");
+    }
+  }
+
+  const wrap = document.createElement("div"); wrap.setAttribute("xmlns", "http://www.w3.org/1999/xhtml"); wrap.appendChild(card);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${cw}" height="${ch}"><style>${document.getElementById("card-styles").textContent.replace(/</g, "&lt;")}</style><foreignObject width="100%" height="100%">${new XMLSerializer().serializeToString(wrap)}</foreignObject></svg>`;
+  const im = await new Promise((res, rej) => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("Render failed"));
+    i.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  });
+
+  const sc = 2;
+  let outW = cw, outH = ch;
+  const pad = 44;
+  if(ratio === "square"){ const s = Math.max(cw, ch) + pad * 2; outW = s; outH = s; }
+  else if(ratio === "portrait"){ outW = Math.max(cw + pad * 2, Math.ceil((ch + pad * 2) * (9 / 16))); outH = Math.ceil(outW * (16 / 9)); if(outH < ch + pad * 2){ outH = ch + pad * 2; outW = Math.ceil(outH * (9 / 16)); } }
+  else if(ratio === "post"){ outW = Math.max(cw + pad * 2, Math.ceil((ch + pad * 2) * 0.8)); outH = Math.ceil(outW * 1.25); if(outH < ch + pad * 2){ outH = ch + pad * 2; outW = Math.ceil(outH * 0.8); } }
+  else if(ratio === "wide"){ outH = Math.max(ch + pad * 2, Math.ceil((cw + pad * 2) * (9 / 16))); outW = Math.ceil(outH * (16 / 9)); if(outW < cw + pad * 2){ outW = cw + pad * 2; outH = Math.ceil(outW * (9 / 16)); } }
+
+  const cv = document.createElement("canvas"); cv.width = outW * sc; cv.height = outH * sc;
+  const ctx = cv.getContext("2d"); ctx.scale(sc, sc);
+  if(ratio !== "auto"){
+    ctx.fillStyle = theme.solidBg || "#111113";
+    ctx.fillRect(0, 0, outW, outH);
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.42)"; ctx.shadowBlur = 32; ctx.shadowOffsetY = 12;
+    ctx.drawImage(im, Math.round((outW - cw) / 2), Math.round((outH - ch) / 2), cw, ch);
+    ctx.restore();
+  }else{
+    ctx.drawImage(im, 0, 0, cw, ch);
+  }
+  return await new Promise((res, rej) => cv.toBlob(b => b ? res(b) : rej(new Error("PNG failed")), "image/png"));
+}
+
+/* ═════════════ STATE & MODALS ═════════════ */
+const app = document.getElementById("app");
+let activeTrack = -1, baseScore = null, studioTab = "layout", cleanShot = false, searchResults = [], searchMeta = null;
+const curAlbum = () => db.albums.find(a => a.id === db.openId) || null;
+function ensurePending(a){ if(a.auto && (!a.songs.length || a.songs[a.songs.length - 1].s !== null)) a.songs.push({ n: "", s: null }); }
+function nextOpenIdx(a, from){ for(let i = from + 1; i < a.songs.length; i++) if(a.songs[i].s === null) return i; for(let i = 0; i < a.songs.length; i++) if(a.songs[i].s === null) return i; return -1; }
+function setActiveTrack(a, i){ activeTrack = i; const s = (i >= 0 && a.songs[i]) ? a.songs[i].s : null; baseScore = (typeof s === "number" && s < 5) ? Math.floor(s) : null; }
+function armBtn(btn, lbl, fn){
+  let armed = false; btn.textContent = lbl;
+  btn.onclick = e => { e.stopPropagation(); if(!armed){ armed = true; btn.textContent = "Confirm?"; setTimeout(() => { armed = false; btn.textContent = lbl; }, 2600); return; } fn(); };
+}
+function mkSyncButton(){
+  if(!(db.settings.syncToken || "").trim()) return null;
+  const b = el("button", "icon-btn");
+  const dot = el("span", "sync-dot " + (syncStatus === "err" ? "err" : db.dirty ? "dirty" : db.lastSync ? "ok" : ""));
+  b.appendChild(dot);
+  b.appendChild(document.createTextNode(syncStatus === "syncing" ? " Syncing…" : " ↻ Sync"));
+  b.disabled = syncStatus === "syncing";
+  b.onclick = syncWithGist;
+  return b;
+}
+function openModal(title, build){
+  closeModal();
+  const bg = el("div", "modal-bg"), mod = el("div", "modal"), hd = el("div", "modal-hd");
+  hd.appendChild(el("h2", "", title));
+  const x = el("button", "ghost", "✕"); x.onclick = closeModal; hd.appendChild(x);
+  mod.appendChild(hd); build(mod);
+  bg.onclick = e => { if(e.target === bg) closeModal(); };
+  bg.appendChild(mod); document.body.appendChild(bg);
+}
+function closeModal(){ const m = document.querySelector(".modal-bg"); if(m) m.remove(); }
+function mkSwitch(val, onCh){ const l = el("label", "switch"), i = el("input"); i.type = "checkbox"; i.checked = !!val; i.onchange = () => onCh(i.checked); l.appendChild(i); l.appendChild(el("span", "slider")); return l; }
+
+function openSettingsModal(){
+  openModal("Settings", mod => {
+    const s = db.settings;
+    const grp = (t, fn) => { const g = el("div", "set-grp"); if(t) g.appendChild(el("div", "sec-lbl", t)); fn(g); mod.appendChild(g); };
+    const row = (p, l, sub, ctrl) => { const r = el("div", "set-row"), inf = el("div"); inf.appendChild(el("div", "set-lbl", l)); if(sub) inf.appendChild(el("div", "set-sub", sub)); const c = el("div", "set-ctrl"); c.appendChild(ctrl); r.appendChild(inf); r.appendChild(c); p.appendChild(r); };
+    const mkSel = (opts, val, fn) => { const sel = el("select"); opts.forEach(([v, t]) => { const o = el("option", "", t); o.value = v; sel.appendChild(o); }); sel.value = val; sel.onchange = () => fn(sel.value); return sel; };
+
+    grp("Appearance", g => row(g, "App Theme", "Workspace appearance", mkSel([["auto","System Auto"],["light","Light"],["dark","Dark"],["oled","OLED Black"]], s.uiTheme, v => { s.uiTheme = v; saveDB(false); applyUITheme(); })));
+
+    grp("Card Presentation", g => {
+      row(g, "Show Release Year", "Format: Artist — Album (Year)", mkSwitch(s.showYear, v => { s.showYear = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
+      const thrWrap = el("div"); thrWrap.style.display = s.highlightEnabled ? "" : "none";
+      row(g, "Highlight Recommended Tracks", "Separate tracks meeting threshold", mkSwitch(s.highlightEnabled, v => { s.highlightEnabled = v; saveDB(false); thrWrap.style.display = v ? "" : "none"; if(db.view === "studio") renderStudio(); }));
+      const thr = el("input"); thr.type = "number"; thr.step = "0.25"; thr.min = "0"; thr.max = "5"; thr.value = String(s.highlightThreshold);
+      thr.onchange = () => { const v = parseFloat(thr.value); if(!isNaN(v) && v >= 0 && v <= 5){ s.highlightThreshold = v; saveDB(false); if(db.view === "studio") renderStudio(); } };
+      row(thrWrap, "Threshold Score (≥)", "Editable (e.g. 3.5, 3.75, 4)", thr);
+      row(thrWrap, "Highlight Style", "Strong visual separation", mkSel([
+        ["spotlight","Spotlight (Dim Others)"],
+        ["framed","Framed vs Flat"],
+        ["wash","Strong Accent Wash"],
+        ["stripeTag","Stripe + PICK Tag"],
+        ["grouped","Grouped Split (2 Sections)"],
+        ["scorePill","Score Pill + Underline"]
+      ], s.highlightStyle, v => { s.highlightStyle = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
+      g.appendChild(thrWrap);
+
+      row(g, "Score Colors", "", mkSel([["semantic","Color Scale (Green→Red)"],["accent","Theme Accent"],["mono","Monochrome Ink"]], s.scoreColorMode, v => { s.scoreColorMode = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
+      row(g, "Number Format", "", mkSel([["clean","Clean (4, 4.5, 4.25)"],["fixed2","Fixed 2 Decimals (4.00)"]], s.decimalMode, v => { s.decimalMode = v; saveDB(false); render(); }));
+      row(g, "Card Track Order", "", mkSel([["track","Track Order"],["score","Highest Rated First"]], s.sortMode, v => { s.sortMode = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
+    });
+
+    grp("Optional Card Extras", g => {
+      row(g, "Top Track Badge", "Highest scored track", mkSwitch(s.showBestTrack, v => { s.showBestTrack = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
+      row(g, "Score Distribution Bar", "Proportional rating bar", mkSwitch(s.showDistribution, v => { s.showDistribution = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
+      row(g, "Rated Date", "Completion date in footer", mkSwitch(s.showDate, v => { s.showDate = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
+      row(g, "Personal Note", "Short review line on card", mkSwitch(s.showNote, v => { s.showNote = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
+    });
+
+    grp("Cloud Sync (GitHub Gist)", g => {
+      g.appendChild(el("div", "set-sub", "Paste a GitHub Personal Access Token (gist permission) once on each device. Auto-finds or creates a private Gist. Local data is never overwritten on failure."));
+      const tok = el("input"); tok.type = "password"; tok.placeholder = "GitHub Token (ghp_... or github_pat_...)"; tok.value = s.syncToken || ""; tok.style.marginTop = "8px";
+      const gid = el("input"); gid.type = "text"; gid.placeholder = "Gist ID (optional — auto-detected)"; gid.value = s.syncGistId || ""; gid.style.marginTop = "6px";
+      const act = el("div", "ctx-actions");
+      const conn = el("button", "primary", "Save & Sync Now");
+      const disc = el("button", "", "Disconnect");
+      conn.onclick = async () => {
+        s.syncToken = tok.value.trim(); s.syncGistId = gid.value.trim();
+        saveDB(false);
+        if(!s.syncToken){ closeModal(); render(); return; }
+        closeModal(); await syncWithGist();
+      };
+      disc.onclick = () => { s.syncToken = ""; s.syncGistId = ""; db.dirty = false; syncStatus = "idle"; saveDB(false); closeModal(); render(); toast("Sync disconnected"); };
+      act.appendChild(conn); act.appendChild(disc);
+      g.appendChild(tok); g.appendChild(gid); g.appendChild(act);
+    });
+
+    grp("Backup & Reset", g => {
+      const r = el("div", "ctx-actions"), cb = el("button", "", "Copy Backup JSON"), rb = el("button", "", "Restore JSON");
+      cb.onclick = () => copyText(JSON.stringify({ albums: db.albums, settings: db.settings }), "Backup copied");
+      const ta = el("textarea"); ta.placeholder = "Paste backup JSON here"; ta.style.cssText = "display:none;margin-top:8px";
+      const imp = el("button", "primary", "Import Backup"); imp.style.cssText = "display:none;margin-top:6px;width:100%";
+      rb.onclick = () => { ta.style.display = ""; imp.style.display = ""; ta.focus(); };
+      imp.onclick = () => {
+        try{
+          const d = JSON.parse(ta.value); if(!d || !Array.isArray(d.albums)) throw 0;
+          const have = new Set(db.albums.map(x => x.id)); let n = 0;
+          d.albums.forEach(x => { if(x && Array.isArray(x.songs) && !have.has(x.id)){ x.updatedAt = x.updatedAt || Date.now(); db.albums.push(x); n++; } });
+          saveDB(); closeModal(); render(); toast(n ? `Imported ${n} album(s)` : "No new albums in backup");
+        }catch(e){ toast("Invalid backup JSON"); }
+      };
+      const rst = el("button", "ghost", "Reset Settings to Default"); rst.style.cssText = "width:100%;margin-top:8px";
+      rst.onclick = () => { const tk = s.syncToken, gi = s.syncGistId; db.settings = { ...DEFAULT_SETTINGS, syncToken: tk, syncGistId: gi }; saveDB(false); applyUITheme(); closeModal(); render(); toast("Settings reset"); };
+      r.appendChild(cb); r.appendChild(rb); g.appendChild(r); g.appendChild(ta); g.appendChild(imp); g.appendChild(rst);
+    });
+  });
+}
+
+function openShareModal(a){
+  openModal("Transfer / Share", mod => {
+    mod.appendChild(el("div", "set-sub", "Copy clean text to move this album between Windows and Android."));
+    const btns = el("div", "ctx-actions");
+    const cFull = el("button", "primary", "Copy Album + Scores");
+    cFull.onclick = () => { copyText(buildTransferText(a), "Transfer text copied"); closeModal(); };
+    btns.appendChild(cFull);
+    const link = buildShareLink(a);
+    if(link){
+      const cLink = el("button", "", "Copy Direct Link");
+      cLink.onclick = () => { copyText(link, "Share link copied"); closeModal(); };
+      btns.appendChild(cLink);
+    }
+    const cRaw = el("button", "", "Scores Only");
+    cRaw.onclick = () => {
+      const t = a.songs.filter(s => !(a.auto && s.s === null && !s.n)).map(s => s.s === null ? "" : String(s.s)).join("\n");
+      copyText(t, "Scores copied"); closeModal();
+    };
+    btns.appendChild(cRaw); mod.appendChild(btns);
+    const pre = el("textarea"); pre.readOnly = true; pre.rows = 7; pre.style.cssText = "margin-top:10px;font-family:'DM Mono',monospace;font-size:13px";
+    pre.value = buildTransferText(a); mod.appendChild(pre);
+  });
+}
+
+function openPasteScoresModal(a){
+  openModal("Paste Scores", mod => {
+    mod.appendChild(el("div", "set-sub", "Paste scores one per line (e.g. 4.25, 5, ?) or Track | Score lines."));
+    const ta = el("textarea"); ta.rows = 8; ta.style.cssText = "margin-top:8px;font-family:'DM Mono',monospace;font-size:14px";
+    ta.placeholder = "4.25\n5\n?\n3.5";
+    const row = el("div", "ctx-actions");
+    const applyR = el("button", "", "Apply & Rate"), applyC = el("button", "primary", "Apply & Open Card");
+    const run = goStudio => {
+      const parsed = parseTransferBlock(ta.value);
+      if(!parsed){ toast("Nothing valid to apply"); return; }
+      let count = 0;
+      if(parsed.kind === "scores"){
+        parsed.scores.forEach((v, idx) => {
+          if(v === undefined) return;
+          if(idx >= a.songs.length && a.auto) a.songs.push({ n: "", s: v });
+          else if(idx < a.songs.length) a.songs[idx].s = v;
+          if(v !== null) count++;
+        });
+      }else if(parsed.kind === "album"){
+        parsed.data.songs.forEach((inc, idx) => {
+          if(idx < a.songs.length){ a.songs[idx].s = inc.s; if(!a.songs[idx].n && inc.n) a.songs[idx].n = inc.n; }
+          else a.songs.push({ n: inc.n, s: inc.s });
+          if(inc.s !== null) count++;
+        });
+      }
+      if(a.auto) ensurePending(a);
+      touchAlbum(a); setActiveTrack(a, nextOpenIdx(a, -1));
+      if(goStudio) db.view = "studio";
+      saveDB(); closeModal(); render(); toast(`Applied ${count} score(s)`);
+    };
+    applyR.onclick = () => run(false); applyC.onclick = () => run(true);
+    row.appendChild(applyR); row.appendChild(applyC);
+    mod.appendChild(ta); mod.appendChild(row);
+    setTimeout(() => ta.focus(), 40);
+  });
+}
+
+function openEditModal(a){
+  openModal("Edit Album", mod => {
+    const ar = el("input"); ar.type = "text"; ar.placeholder = "Artist"; ar.value = a.artist || "";
+    const al = el("input"); al.type = "text"; al.placeholder = "Album"; al.value = a.album || "";
+    const yr = el("input"); yr.type = "text"; yr.placeholder = "Release Year (e.g. 2000)"; yr.value = a.year || "";
+    const nt = el("input"); nt.type = "text"; nt.placeholder = "Personal note (optional)"; nt.value = a.note || "";
+    const g1 = el("div", "row2"); g1.appendChild(ar); g1.appendChild(al);
+    const g2 = el("div", "row2"); g2.style.marginTop = "8px"; g2.appendChild(yr); g2.appendChild(nt);
+    mod.appendChild(g1); mod.appendChild(g2);
+
+    mod.appendChild(el("div", "sec-lbl", "Tracks"));
+    const trWrap = el("div");
+    let draftSongs = a.songs.filter(s => !(a.auto && s.s === null && !s.n)).map(s => ({ ...s }));
+    function drawTracks(){
+      trWrap.innerHTML = "";
+      draftSongs.forEach((s, idx) => {
+        const r = el("div", "edit-tr-row"), num = el("span", "t-idx", idx + 1);
+        const inp = el("input"); inp.type = "text"; inp.value = s.n; inp.placeholder = `Track ${idx + 1}`;
+        inp.oninput = () => s.n = inp.value;
+        const del = el("button", "ghost", "✕"); del.onclick = () => { draftSongs.splice(idx, 1); drawTracks(); };
+        r.appendChild(num); r.appendChild(inp); r.appendChild(del); trWrap.appendChild(r);
+      });
+    }
+    drawTracks(); mod.appendChild(trWrap);
+    const addB = el("button", "", "+ Add Track"); addB.style.marginTop = "4px";
+    addB.onclick = () => { draftSongs.push({ n: "", s: null }); drawTracks(); };
+    mod.appendChild(addB);
+
+    const saveB = el("button", "primary", "Save Changes"); saveB.style.cssText = "width:100%;margin-top:12px";
+    saveB.onclick = () => {
+      a.artist = ar.value.trim(); a.album = al.value.trim() || "Untitled Album";
+      a.year = yr.value.trim(); a.note = nt.value.trim();
+      a.songs = draftSongs.map(x => ({ n: x.n.trim(), s: x.s }));
+      if(a.auto) ensurePending(a);
+      touchAlbum(a); setActiveTrack(a, nextOpenIdx(a, -1));
+      saveDB(); closeModal(); render(); toast("Album updated");
+    };
+    mod.appendChild(saveB);
+  });
+}
+
+function openCoverModal(a){
+  openModal("Album Cover & Info", mod => {
+    const row = el("div"); row.style.cssText = "display:flex;gap:8px;align-items:center";
+    const uInp = el("input"); uInp.type = "text"; uInp.placeholder = "Paste cover image URL…";
+    const useB = el("button", "", "Use");
+    useB.onclick = () => { const v = uInp.value.trim(); if(!v) return; a.cover = v; touchAlbum(a); saveDB(); closeModal(); render(); toast("Cover updated"); };
+    const upLbl = el("label", "chip", "Upload"); upLbl.style.cssText = "cursor:pointer;padding:9px 12px";
+    const fInp = el("input"); fInp.type = "file"; fInp.accept = "image/*"; fInp.style.display = "none";
+    fInp.onchange = () => readImageFile(fInp.files[0], du => { if(du){ a.cover = du; touchAlbum(a); saveDB(); closeModal(); render(); toast("Cover uploaded"); } });
+    upLbl.appendChild(fInp); row.appendChild(uInp); row.appendChild(useB); row.appendChild(upLbl); mod.appendChild(row);
+
+    const fRow = el("div", "ctx-actions");
+    const fetchB = el("button", "primary", "Fetch Cover & Year Online");
+    const clrB = el("button", "", "Remove Cover");
+    clrB.onclick = () => { a.cover = ""; touchAlbum(a); saveDB(); closeModal(); render(); toast("Cover cleared"); };
+    fRow.appendChild(fetchB); fRow.appendChild(clrB); mod.appendChild(fRow);
+
+    const status = el("div", "status-msg"), grid = el("div", "cover-grid");
+    mod.appendChild(status); mod.appendChild(grid);
+
+    fetchB.onclick = async () => {
+      fetchB.disabled = true; status.textContent = "Searching iTunes, Deezer & MusicBrainz…"; grid.innerHTML = "";
+      try{
+        const q = `${a.artist || ""} ${a.album || ""}`.trim();
+        const [opts, sr] = await Promise.all([fetchCoverOptions(a.artist, a.album, [], q), (!a.year || !a.artist) ? searchAlbumsOnline(q).catch(() => null) : Promise.resolve(null)]);
+        if(sr && sr.results.length){ const top = sr.results[0]; if(!a.year && top.year) a.year = top.year; if(!a.artist && top.artist) a.artist = top.artist; touchAlbum(a); saveDB(); }
+        status.textContent = opts.length ? `Found ${opts.length} cover(s) — tap one to apply:` : "No covers found — paste a URL or upload.";
+        opts.slice(0, 10).forEach(o => {
+          const btn = el("button", "cover-opt"); btn.title = `${o.artist} — ${o.album} (${o.src})`;
+          const im = el("img"); im.src = o.url; im.loading = "lazy";
+          btn.onclick = () => { a.cover = o.url; if(!a.year && o.year) a.year = o.year; touchAlbum(a); saveDB(); closeModal(); render(); toast("Cover applied"); };
+          btn.appendChild(im); grid.appendChild(btn);
+        });
+      }catch(e){ status.textContent = "Search failed (check internet)."; }
+      fetchB.disabled = false;
+    };
+  });
+}
+
+/* ═════════════ HOME VIEW ═════════════ */
+function renderHome(){
+  document.body.classList.remove("studio-mode", "clean-shot");
+  app.innerHTML = "";
+  const wrap = el("div", "wrap");
+
+  const tb = el("div", "topbar");
+  tb.appendChild(el("h1", "brand", "Album Rater"));
+  const ta = el("div", "top-actions");
+  const syncB = mkSyncButton(); if(syncB) ta.appendChild(syncB);
+  const setB = el("button", "icon-btn", "⚙ Settings"); setB.onclick = openSettingsModal;
+  ta.appendChild(setB); tb.appendChild(ta); wrap.appendChild(tb);
+
+  const box = el("div", "box");
+  const dz = el("div", "drop-area");
+  const inp = el("textarea");
+  inp.placeholder = "Drop an album folder or audio files here — or type \"Artist - Album\", paste tracklist / transfer text, or Spotify URL";
+  dz.appendChild(inp);
+
+  const subRow = el("div", "subtle-row"), chips = el("div", "chips");
+  const foldLbl = el("label", "chip", "📁 Folder"); foldLbl.style.cursor = "pointer";
+  const foldIn = el("input"); foldIn.type = "file"; foldIn.webkitdirectory = true; foldIn.multiple = true; foldIn.style.display = "none";
+  foldLbl.appendChild(foldIn);
+
+  const filesLbl = el("label", "chip", "🎵 Audio Files"); filesLbl.style.cursor = "pointer";
+  const filesIn = el("input"); filesIn.type = "file"; filesIn.multiple = true; filesIn.accept = "audio/*,.mp3,.m4a,.m4b,.mp4,.flac,.wav,.aac,.ogg,.opus,.alac"; filesIn.style.display = "none";
+  filesLbl.appendChild(filesIn);
+
+  const manBtn = el("button", "chip", "+ Manual");
+  chips.appendChild(foldLbl); chips.appendChild(filesLbl); chips.appendChild(manBtn);
+  subRow.appendChild(chips); dz.appendChild(subRow); box.appendChild(dz);
+
+  const ctx = el("div", "ctx-actions"), status = el("div", "status-msg"), candWrap = el("div");
+  const manPanel = el("div", "manual-grid"); manPanel.style.display = "none";
+  const mRow = el("div", "row2"), mAr = el("input"), mAl = el("input");
+  mAr.type = "text"; mAr.placeholder = "Artist"; mAl.type = "text"; mAl.placeholder = "Album";
+  mRow.appendChild(mAr); mRow.appendChild(mAl);
+  const mRow2 = el("div", "row2"), mYr = el("input"), mCv = el("input");
+  mYr.type = "text"; mYr.placeholder = "Year (optional)"; mCv.type = "text"; mCv.placeholder = "Cover URL (optional)";
+  mRow2.appendChild(mYr); mRow2.appendChild(mCv);
+  const mTr = el("textarea"); mTr.rows = 5; mTr.placeholder = "Tracks (one per line)";
+  const mSc = el("textarea"); mSc.rows = 3; mSc.placeholder = "Scores (optional, one per line: 4.25, 5, ?)";
+  const mGo = el("button", "primary", "Create Album");
+  mGo.onclick = () => {
+    const tracks = mTr.value.split("\n").map(cleanTrackLine).filter(Boolean);
+    const scLines = mSc.value.trim() ? mSc.value.split("\n").map(parseScoreToken) : [];
+    const songs = tracks.map((n, i) => ({ n, s: (scLines[i] !== undefined) ? scLines[i] : null }));
+    if(!mAl.value.trim() && !songs.length){ status.textContent = "Enter an album name or tracks."; status.className = "status-msg err"; return; }
+    importOrMergeAlbum({ artist: mAr.value.trim(), album: mAl.value.trim() || "Untitled Album", year: mYr.value.trim(), cover: mCv.value.trim(), auto: songs.length === 0, songs }, scLines.some(x => x !== null && x !== undefined));
+    render();
+  };
+  manPanel.appendChild(mRow); manPanel.appendChild(mRow2); manPanel.appendChild(mTr); manPanel.appendChild(mSc); manPanel.appendChild(mGo);
+  manBtn.onclick = () => { manPanel.style.display = manPanel.style.display === "none" ? "grid" : "none"; };
+  box.appendChild(ctx); box.appendChild(status); box.appendChild(candWrap); box.appendChild(manPanel);
+  wrap.appendChild(box);
+
+  async function handlePickedFiles(files, hint = ""){
+    if(!files || !files.length) return;
+    status.className = "status-msg"; status.textContent = "Reading audio tags locally…";
+    const parsed = await parseDroppedFiles(files, hint);
+    if(!parsed){ status.className = "status-msg err"; status.textContent = "No supported audio files found."; return; }
+    importOrMergeAlbum(parsed, false); render();
+    toast(`Loaded ${parsed.songs.length} tracks${parsed.cover ? " + cover" : ""}`);
+  }
+  foldIn.onchange = () => handlePickedFiles(foldIn.files);
+  filesIn.onchange = () => handlePickedFiles(filesIn.files);
+
+  async function runOnlineSearch(query){
+    status.className = "status-msg"; status.textContent = "Searching MusicBrainz & iTunes…"; candWrap.innerHTML = "";
+    try{
+      const sr = await searchAlbumsOnline(query);
+      if(!sr.results.length){ status.className = "status-msg err"; status.textContent = "Album not found. Check spelling or use Manual."; return; }
+      searchMeta = sr; searchResults = sr.results.slice(0, 6);
+      const [a, b] = sr.results;
+      const ambig = b && b.score >= a.score - 0.03 && norm(b.artist) !== norm(a.artist);
+      if(a.score >= 0.82 && !ambig) await pickOnlineCandidate(a);
+      else{ status.textContent = "Select the matching release:"; drawCandidates(); }
+    }catch(e){ status.className = "status-msg err"; status.textContent = e.message || "Search failed (offline?)."; }
+  }
+  async function pickOnlineCandidate(p){
+    status.className = "status-msg"; status.textContent = "Loading tracklist & cover…";
+    const tr = await loadReleaseTracks(p);
+    if(!tr){ status.className = "status-msg err"; status.textContent = "Could not load tracklist."; return; }
+    const cover = searchMeta.spCover || await findBestCover({ mbid: p.src === "mb" ? p.id : "", rgid: p.rgid, known: p.cover, artist: p.artist, album: p.album, cands: searchMeta.cands, raw: searchMeta.qRaw });
+    importOrMergeAlbum({ artist: p.artist, album: p.album, year: tr.year || p.year || "", cover, auto: false, songs: tr.tracks.map(n => ({ n, s: null })) }, false);
+    searchResults = []; searchMeta = null; render();
+  }
+  function drawCandidates(){
+    candWrap.innerHTML = "";
+    searchResults.forEach(c => {
+      const b = el("button", "cand");
+      if(c.cover){ const im = el("img"); im.src = c.cover; b.appendChild(im); } else b.appendChild(el("div", "ph"));
+      const inf = el("div", "cand-info");
+      inf.appendChild(el("div", "cand-t", c.album));
+      inf.appendChild(el("div", "cand-s", `${c.artist}${c.year ? " · " + c.year : ""}${c.count ? " · " + c.count + " tracks" : ""}`));
+      b.onclick = () => pickOnlineCandidate(c);
+      b.appendChild(inf); candWrap.appendChild(b);
+    });
+  }
+
+  inp.oninput = () => {
+    ctx.innerHTML = ""; status.textContent = ""; candWrap.innerHTML = "";
+    const parsed = parseTransferBlock(inp.value); if(!parsed) return;
+    if(parsed.kind === "single"){
+      const bS = el("button", "primary", "Search Online"); bS.onclick = () => runOnlineSearch(parsed.line);
+      const bB = el("button", "", "Start Blind (No Tracklist)"); bB.onclick = () => { const sp = splitArtistAlbum(parsed.line); importOrMergeAlbum({ artist: sp.artist, album: sp.album || parsed.line, year: sp.year, auto: true, songs: [] }, false); render(); };
+      ctx.appendChild(bS); ctx.appendChild(bB);
+    }else if(parsed.kind === "album"){
+      const bGo = el("button", "primary", parsed.hasScores ? "Import & Open Card" : "Open Album");
+      bGo.onclick = () => { importOrMergeAlbum(parsed.data, parsed.hasScores); render(); };
+      ctx.appendChild(bGo);
+    }else if(parsed.kind === "backup"){
+      const bImp = el("button", "primary", `Import Backup (${parsed.data.albums.length} albums)`);
+      bImp.onclick = () => {
+        const have = new Set(db.albums.map(x => x.id)); let n = 0;
+        parsed.data.albums.forEach(x => { if(x && Array.isArray(x.songs) && !have.has(x.id)){ x.updatedAt = x.updatedAt || Date.now(); db.albums.push(x); n++; } });
+        saveDB(); inp.value = ""; render(); toast(`Imported ${n} album(s)`);
+      };
+      ctx.appendChild(bImp);
+    }else if(parsed.kind === "scores"){
+      status.textContent = "Detected raw scores — open an album below and tap 📋 to paste scores onto it.";
+    }
+  };
+
+  if(db.albums.length){
+    wrap.appendChild(el("div", "sec-lbl", `Library (${db.albums.length})`));
+    db.albums.slice().reverse().forEach(a => {
+      const st = calcStat(a), row = el("div", "alb-item"), clk = el("div", "alb-click");
+      const th = el("img", "alb-thumb"); th.src = a.cover || makePlaceholderCover(a.album);
+      const mt = el("div", "alb-meta");
+      mt.appendChild(el("div", "alb-title", formatAlbumTitle(a, db.settings.showYear)));
+      mt.appendChild(el("div", "alb-sub", `${st.rated}/${st.total} rated · avg ${st.avg}`));
+      clk.appendChild(th); clk.appendChild(mt);
+      clk.onclick = () => { db.openId = a.id; db.view = "rate"; saveDB(false); render(); };
+
+      const btns = el("div", "alb-btns");
+      const cardB = el("button", "icon-btn", "✦ Card");
+      cardB.onclick = e => { e.stopPropagation(); db.openId = a.id; db.view = "studio"; saveDB(false); render(); };
+      const delB = el("button", "ghost");
+      armBtn(delB, "Delete", () => {
+        db.deleted.push({ id: a.id, at: Date.now() });
+        db.albums = db.albums.filter(x => x.id !== a.id);
+        if(db.openId === a.id) db.openId = null;
+        saveDB(); render();
+      });
+      btns.appendChild(cardB); btns.appendChild(delB);
+      row.appendChild(clk); row.appendChild(btns); wrap.appendChild(row);
+    });
+  }
+
+  app.appendChild(wrap);
+  window._dropHandler = handlePickedFiles;
+}
+
+/* ═════════════ RATING VIEW ═════════════ */
+function renderRate(){
+  const a = curAlbum(); if(!a){ db.view = "home"; return renderHome(); }
+  document.body.classList.remove("studio-mode", "clean-shot");
+  ensurePending(a);
+  if(activeTrack < 0 || activeTrack >= a.songs.length) setActiveTrack(a, nextOpenIdx(a, -1));
+
+  app.innerHTML = "";
+  const wrap = el("div", "wrap");
+
+  const tb = el("div", "topbar");
+  const backB = el("button", "icon-btn", "← Library");
+  backB.onclick = () => { db.openId = null; db.view = "home"; saveDB(false); render(); };
+  const ta = el("div", "top-actions");
+  const syncB = mkSyncButton(); if(syncB) ta.appendChild(syncB);
+  const covB = el("button", "icon-btn", "🖼 Cover"); covB.onclick = () => openCoverModal(a);
+  const pstB = el("button", "icon-btn", "📋 Scores"); pstB.onclick = () => openPasteScoresModal(a);
+  const shrB = el("button", "icon-btn", "📤 Share"); shrB.onclick = () => openShareModal(a);
+  const setB = el("button", "icon-btn", "⚙"); setB.onclick = openSettingsModal;
+  ta.appendChild(covB); ta.appendChild(pstB); ta.appendChild(shrB); ta.appendChild(setB);
+  tb.appendChild(backB); tb.appendChild(ta); wrap.appendChild(tb);
+
+  const hd = el("div", "rate-head");
+  const th = el("img", "alb-thumb"); th.src = a.cover || makePlaceholderCover(a.album); th.onclick = () => openCoverModal(a);
+  const inf = el("div", "rate-info"); inf.onclick = () => openEditModal(a);
+  if(a.artist) inf.appendChild(el("div", "rate-artist", a.artist + (a.year ? ` · ${a.year}` : "")));
+  inf.appendChild(el("div", "rate-album", a.album || "Untitled Album"));
+  const edB = el("button", "ghost", "✎ Edit"); edB.onclick = () => openEditModal(a);
+  hd.appendChild(th); hd.appendChild(inf); hd.appendChild(edB); wrap.appendChild(hd);
+
+  if(!a.auto){
+    const bar = el("div", "rate-add-bar");
+    const addIn = el("input"); addIn.type = "text"; addIn.placeholder = "Quick add track…";
+    const addB = el("button", "", "Add");
+    const doAdd = () => {
+      const v = cleanTrackLine(addIn.value); if(!v) return;
+      a.songs.push({ n: v, s: null }); touchAlbum(a);
+      if(activeTrack < 0) setActiveTrack(a, a.songs.length - 1);
+      saveDB(); renderRate();
+      const nx = app.querySelector(".rate-add-bar input"); if(nx) nx.focus();
+    };
+    addB.onclick = doAdd; addIn.onkeydown = e => { if(e.key === "Enter") doAdd(); };
+    bar.appendChild(addIn); bar.appendChild(addB); wrap.appendChild(bar);
+  }
+
+  const listWrap = el("div"), avgNode = el("div", "foot-avg");
+  function updFoot(){
+    const st = calcStat(a); avgNode.innerHTML = "";
+    const left = el("span"); left.appendChild(document.createTextNode("Avg: ")); left.appendChild(el("b", "", st.avg));
+    const right = el("span", "", `${st.scored} scored${st.ungraded ? " · " + st.ungraded + " (?)" : ""}${st.left ? " · " + st.left + " left" : ""}`);
+    avgNode.appendChild(left); avgNode.appendChild(right);
+  }
+  function finishScore(idx){
+    ensurePending(a); touchAlbum(a); setActiveTrack(a, nextOpenIdx(a, idx)); saveDB(); drawList(true);
+  }
+  function buildTrackCard(idx){
+    const s = a.songs[idx], nm = s.n || `Track ${idx + 1}`, isAct = idx === activeTrack;
+    const d = el("div", "t-card" + (s.s === null ? " un" : "") + (isAct ? " act" : "")); d.id = "tr" + idx;
+    if(!isAct){
+      d.className += " cl";
+      const lf = el("div", "t-left"); lf.appendChild(el("span", "t-idx", idx + 1)); lf.appendChild(el("span", "t-nm", nm));
+      d.appendChild(lf); d.appendChild(el("span", "t-bdg", fmtScore(s.s)));
+      d.onclick = () => { setActiveTrack(a, idx); drawList(true); };
+      return d;
+    }
+    const top = el("div", "t-act-top"), lf = el("div", "t-left");
+    lf.appendChild(el("span", "t-idx", idx + 1)); lf.appendChild(el("span", "t-nm", nm));
+    const acts = el("div"); acts.style.cssText = "display:flex;gap:2px";
+    const renB = el("button", "ghost", "✎"); renB.title = "Rename";
+    renB.onclick = () => { const nv = prompt("Track name:", s.n); if(nv !== null){ s.n = nv.trim(); touchAlbum(a); saveDB(); drawList(false); } };
+    const rmB = el("button", "ghost", "✕"); rmB.title = "Remove";
+    rmB.onclick = () => { a.songs.splice(idx, 1); ensurePending(a); touchAlbum(a); setActiveTrack(a, nextOpenIdx(a, idx - 1)); saveDB(); drawList(true); };
+    acts.appendChild(renB); acts.appendChild(rmB); top.appendChild(lf); top.appendChild(acts); d.appendChild(top);
+
+    const redo = () => { listWrap.replaceChild(buildTrackCard(idx), d); updFoot(); };
+    if(baseScore === null){
+      const w = typeof s.s === "number" ? Math.floor(s.s) : null, k1 = el("div", "kpad1");
+      [0, 1, 2, 3, 4, 5, "?"].forEach(v => {
+        const b = el("button", (v === "?" ? s.s === "?" : w === v) ? "on" : "", String(v));
+        b.onclick = () => { a.songs[idx].s = v; if(v === 5 || v === "?") finishScore(idx); else{ baseScore = v; touchAlbum(a); saveDB(); redo(); } };
+        k1.appendChild(b);
+      });
+      d.appendChild(k1);
+    }else{
+      const k2 = el("div", "kpad2"), bk = el("button", "bk", "←");
+      bk.onclick = () => { baseScore = null; redo(); };
+      k2.appendChild(bk);
+      [0, 0.25, 0.5, 0.75].forEach(f => {
+        const val = baseScore + f, b = el("button", s.s === val ? "on" : "", String(val));
+        b.onclick = () => { a.songs[idx].s = val; finishScore(idx); };
+        k2.appendChild(b);
+      });
+      d.appendChild(k2);
+    }
+    return d;
+  }
+  function drawList(scroll){
+    listWrap.innerHTML = ""; a.songs.forEach((_, i) => listWrap.appendChild(buildTrackCard(i))); updFoot();
+    if(scroll){ const elR = activeTrack >= 0 && document.getElementById("tr" + activeTrack); if(elR) elR.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+  }
+  wrap.appendChild(listWrap);
+
+  const foot = el("div", "foot"), fin = el("div", "foot-in"), fbtns = el("div", "foot-btns");
+  const cpTr = el("button", "", "Copy Transfer"); cpTr.onclick = () => copyText(buildTransferText(a), "Copied for transfer");
+  fbtns.appendChild(cpTr);
+  if(a.auto){
+    const finB = el("button", "", "Finish List");
+    finB.onclick = () => { while(a.songs.length && a.songs[a.songs.length - 1].s === null) a.songs.pop(); a.auto = false; touchAlbum(a); setActiveTrack(a, -1); saveDB(); renderRate(); };
+    fbtns.appendChild(finB);
+  }
+  const stB = el("button", "primary", "Card Studio →");
+  stB.onclick = () => { while(a.songs.length && a.auto && a.songs[a.songs.length - 1].s === null && !a.songs[a.songs.length - 1].n) a.songs.pop(); a.auto = false; db.view = "studio"; saveDB(false); render(); };
+  fbtns.appendChild(stB); fin.appendChild(avgNode); fin.appendChild(fbtns); foot.appendChild(fin);
+  app.appendChild(wrap); app.appendChild(foot);
+  drawList(false);
+}
+
+/* ═════════════ CARD BUILDER (14 LAYOUTS × 36 THEMES × 6 HIGHLIGHT MODES) ═════════════ */
+function buildCardDOM(a, theme){
+  const s = db.settings, st = calcStat(a), lay = s.cardLayout || "side";
+  const hlOn = !!s.highlightEnabled, hlMode = s.highlightStyle || "spotlight";
+  const hlCls = hlOn && hlMode !== "grouped" ? ` hl-${hlMode}` : "";
+  const root = el("div", `card-root lay-${lay}${hlCls}`);
+  Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+
+  const coverSrc = a.cover || makePlaceholderCover(a.album);
+  const cleanSongs = a.songs.filter(x => !(a.auto && x.s === null && !x.n)).map((x, i) => ({ idx: i + 1, n: x.n || `Track ${i + 1}`, s: x.s }));
+  const displaySongs = s.sortMode === "score"
+    ? [...cleanSongs].sort((x, y) => ((typeof y.s === "number" ? y.s : -1) - (typeof x.s === "number" ? x.s : -1)) || (x.idx - y.idx))
+    : cleanSongs;
+
+  const isHi = val => hlOn && typeof val === "number" && val >= (Number(s.highlightThreshold) || 3.5);
+
+  function mkHeader(stacked){
+    const yr = (s.showYear && a.year) ? `(${a.year})` : "";
+    if(stacked){
+      const box = el("div");
+      if(a.artist) box.appendChild(el("div", "c-artist", a.artist));
+      const h = el("div", "c-album c-disp", a.album || "Untitled Album");
+      if(yr) h.appendChild(el("span", "c-year", yr));
+      box.appendChild(h); return box;
+    }
+    const h = el("div", "c-header-inline c-disp");
+    if(a.artist){ h.appendChild(el("span", "art", a.artist)); h.appendChild(el("span", "sep", "—")); }
+    h.appendChild(el("span", "", a.album || "Untitled Album"));
+    if(yr) h.appendChild(el("span", "yr", yr));
+    return h;
+  }
+
+  function mkAvgBox(lbl = "Average"){
+    const b = el("div", "c-avg-box");
+    b.appendChild(el("span", "c-avg-lbl", lbl));
+    b.appendChild(el("span", "c-avg-val", st.avg));
+    return b;
+  }
+
+  function mkTrackRow(item, mode){
+    const hi = isHi(item.s), rowCls = "t-row" + (hlOn ? (hi ? " hi" : " dim") : "");
+    const r = el("div", rowCls), col = getScoreColor(item.s, theme), scTxt = fmtScore(item.s);
+
+    if(mode === "digits"){
+      const sc = el("span", "t-score", scTxt); sc.style.color = col;
+      const mid = el("div", "dig-mid"), top = el("div"); top.style.cssText = "display:flex;align-items:center;gap:7px";
+      top.appendChild(el("span", "t-num", String(item.idx).padStart(2, "0")));
+      top.appendChild(el("span", "t-title", item.n));
+      if(hi && hlMode === "stripeTag") top.appendChild(el("span", "t-pick", "PICK"));
+      const ln = el("div", "dig-line"), fl = el("div");
+      fl.style.width = (typeof item.s === "number" ? (item.s / 5) * 100 : 0) + "%"; fl.style.background = col;
+      ln.appendChild(fl); mid.appendChild(top); mid.appendChild(ln);
+      r.appendChild(sc); r.appendChild(mid); return r;
+    }
+    if(mode === "lined"){
+      const dot = el("span", "dot"); dot.style.background = typeof item.s === "number" ? col : theme.vars["--c-border"];
+      r.appendChild(dot); r.appendChild(el("span", "t-num", item.idx));
+      r.appendChild(el("span", "t-title", item.n));
+      if(hi && hlMode === "stripeTag") r.appendChild(el("span", "t-pick", "PICK"));
+      const bw = el("div", "bar-wrap"), bf = el("div", "bar-fill");
+      bf.style.width = (typeof item.s === "number" ? (item.s / 5) * 100 : 0) + "%"; bf.style.background = col;
+      bw.appendChild(bf); r.appendChild(bw);
+      const sc = el("span", "t-score", scTxt); sc.style.color = col; r.appendChild(sc);
+      return r;
+    }
+    if(hi && hlMode === "scorePill") r.appendChild(el("span", "t-dot-hi"));
+    r.appendChild(el("span", "t-num", item.idx));
+    r.appendChild(el("span", "t-title", item.n));
+    if(hi && hlMode === "stripeTag") r.appendChild(el("span", "t-pick", "PICK"));
+    const sc = el("span", "t-score", scTxt); sc.style.color = col; r.appendChild(sc);
+    return r;
+  }
+
+  function appendTracks(container, items, mode){
+    if(hlOn && hlMode === "grouped"){
+      const rec = items.filter(x => isHi(x.s)), oth = items.filter(x => !isHi(x.s));
+      if(rec.length){
+        container.appendChild(el("div", "hl-grp-hd", `Recommended (≥ ${s.highlightThreshold})`));
+        rec.forEach(x => container.appendChild(mkTrackRow(x, mode)));
+      }
+      if(oth.length){
+        if(rec.length) container.appendChild(el("div", "hl-grp-hd muted", "Other Tracks"));
+        oth.forEach(x => container.appendChild(mkTrackRow(x, mode)));
+      }
+      return;
+    }
+    items.forEach(x => container.appendChild(mkTrackRow(x, mode)));
+  }
+
+  function mkExtras(){
+    if(!s.showBestTrack && !s.showDistribution && !s.showDate && !(s.showNote && a.note)) return null;
+    const ex = el("div", "c-extras");
+    if(s.showNote && a.note) ex.appendChild(el("div", "c-note", `“${a.note}”`));
+    if(s.showBestTrack){
+      const best = cleanSongs.filter(x => typeof x.s === "number").sort((x, y) => y.s - x.s)[0];
+      if(best){ const sp = el("span"); sp.appendChild(document.createTextNode("Top: ")); sp.appendChild(el("b", "", `${best.n} (${fmtScore(best.s)})`)); ex.appendChild(sp); }
+    }
+    if(s.showDistribution){
+      const nums = cleanSongs.filter(x => typeof x.s === "number").map(x => x.s);
+      if(nums.length){
+        const bar = el("div", "c-dist");
+        [[4.5,5.1],[3.5,4.5],[2.5,3.5],[1.5,2.5],[0,1.5]].forEach(([mn, mx]) => {
+          const cnt = nums.filter(v => v >= mn && v < mx).length;
+          if(cnt){ const seg = el("span"); seg.style.width = Math.max(8, Math.round((cnt / nums.length) * 90)) + "px"; seg.style.background = getScoreColor(mn === 0 ? 1 : mn, theme); bar.appendChild(seg); }
+        });
+        ex.appendChild(bar);
+      }
+    }
+    if(s.showDate) ex.appendChild(el("span", "", new Date(a.createdAt || Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })));
+    return ex;
+  }
+
+  const mkImg = () => { const i = el("img", "c-cover"); i.src = coverSrc; if(!coverSrc.startsWith("data:")) i.crossOrigin = "anonymous"; i.alt = a.album; return i; };
+  let targetContainer = root;
+
+  if(lay === "side"){
+    const g = el("div", "s-grid"), lf = el("div", "s-left"), rt = el("div", "s-list");
+    lf.appendChild(mkImg()); lf.appendChild(mkHeader(true)); lf.appendChild(mkAvgBox("Average"));
+    appendTracks(rt, displaySongs); g.appendChild(lf); g.appendChild(rt); root.appendChild(g);
+  }
+  else if(lay === "center"){
+    const top = el("div", "cen-top"); top.appendChild(mkImg()); top.appendChild(mkHeader(true)); root.appendChild(top);
+    const list = el("div", "cen-list"); appendTracks(list, displaySongs); root.appendChild(list);
+    const ft = el("div", "cen-foot"); ft.appendChild(mkAvgBox("Average")); root.appendChild(ft);
+  }
+  else if(lay === "showcase"){
+    const g = el("div", "sh-grid"), lf = el("div", "sh-left"), rt = el("div", "sh-right"), trs = el("div", "sh-tracks");
+    lf.appendChild(mkImg());
+    const meta = el("div", "sh-meta"); meta.appendChild(mkHeader(true)); lf.appendChild(meta);
+    appendTracks(trs, displaySongs);
+    rt.appendChild(trs); rt.appendChild(mkAvgBox("Average"));
+    g.appendChild(lf); g.appendChild(rt); root.appendChild(g);
+  }
+  else if(lay === "minimal"){
+    const hd = el("div", "min-hd"); hd.appendChild(mkImg());
+    const meta = el("div", "min-meta"); meta.appendChild(mkHeader(true));
+    const av = el("div", "min-avg"); av.appendChild(el("span", "c-avg-lbl", "Average")); av.appendChild(el("span", "c-avg-val", st.avg));
+    meta.appendChild(av); hd.appendChild(meta); root.appendChild(hd);
+    appendTracks(root, displaySongs);
+  }
+  else if(lay === "lined"){
+    const hd = el("div", "lin-hd"); hd.appendChild(mkImg());
+    const meta = el("div", "lin-meta"); meta.appendChild(mkHeader(true)); meta.appendChild(mkAvgBox("Average"));
+    hd.appendChild(meta); root.appendChild(hd);
+    appendTracks(root, displaySongs, "lined");
+  }
+  else if(lay === "digits"){
+    const hd = el("div", "dig-hd"); hd.appendChild(mkImg());
+    const meta = el("div", "dig-meta"); meta.appendChild(mkHeader(true)); meta.appendChild(mkAvgBox("Average"));
+    hd.appendChild(meta); root.appendChild(hd);
+    appendTracks(root, displaySongs, "digits");
+  }
+  else if(lay === "split"){
+    const hd = el("div", "sp-hd"); hd.appendChild(mkImg());
+    const inf = el("div", "sp-hd-info"); inf.appendChild(mkHeader(true)); inf.appendChild(mkAvgBox("Average"));
+    hd.appendChild(inf); root.appendChild(hd);
+    const half = Math.ceil(displaySongs.length / 2), cols = el("div", "sp-cols"), c1 = el("div"), c2 = el("div");
+    appendTracks(c1, displaySongs.slice(0, half)); appendTracks(c2, displaySongs.slice(half));
+    cols.appendChild(c1); cols.appendChild(c2); root.appendChild(cols);
+  }
+  else if(lay === "splitSide"){
+    const g = el("div", "ss-grid"), lf = el("div", "ss-left"), cols = el("div", "ss-cols");
+    lf.appendChild(mkImg()); lf.appendChild(mkHeader(true)); lf.appendChild(mkAvgBox("Average"));
+    if(hlOn && hlMode === "grouped"){
+      const wrapCol = el("div"); appendTracks(wrapCol, displaySongs); g.appendChild(lf); g.appendChild(wrapCol);
+    }else{
+      displaySongs.forEach(x => cols.appendChild(mkTrackRow(x)));
+      g.appendChild(lf); g.appendChild(cols);
+    }
+    root.appendChild(g);
+  }
+  else if(lay === "poster"){
+    const hero = el("div", "pos-hero"); hero.appendChild(mkImg());
+    const meta = el("div", "pos-meta"); meta.appendChild(mkHeader(true));
+    const stamp = el("div", "pos-stamp"); stamp.appendChild(el("span", "c-avg-lbl", "Average")); stamp.appendChild(el("span", "c-avg-val", st.avg));
+    meta.appendChild(stamp); hero.appendChild(meta); root.appendChild(hero);
+    const body = el("div", "pos-body");
+    if(hlOn && hlMode === "grouped"){ appendTracks(body, displaySongs); }
+    else{ const grid = el("div", "pos-grid" + (displaySongs.length >= 11 ? " two" : "")); displaySongs.forEach(x => grid.appendChild(mkTrackRow(x))); body.appendChild(grid); }
+    root.appendChild(body); targetContainer = body;
+  }
+  else if(lay === "liner"){
+    const top = el("div", "ln-top"); top.appendChild(mkImg());
+    const kv = el("div", "ln-kv");
+    const mkKv = (k, v, ac) => { const d = el("div"); d.appendChild(el("span", "ln-k", k)); d.appendChild(el("span", "ln-v" + (ac ? " ac" : ""), v)); return d; };
+    kv.appendChild(mkKv("ARTIST", a.artist || "—", true));
+    kv.appendChild(mkKv("ALBUM", a.album || "Untitled"));
+    if(s.showYear && a.year) kv.appendChild(mkKv("YEAR", a.year));
+    kv.appendChild(mkKv("AVERAGE", st.avg, true));
+    top.appendChild(kv); root.appendChild(top);
+    appendTracks(root, displaySongs);
+  }
+  else if(lay === "bento"){
+    const top = el("div", "ben-top"), tCov = el("div", "ben-cover"); tCov.appendChild(mkImg());
+    const side = el("div", "ben-side");
+    const tMeta = el("div", "ben-tile"); tMeta.appendChild(mkHeader(true));
+    const tAvg = el("div", "ben-tile ben-avg"); tAvg.appendChild(el("span", "c-avg-lbl", "Average")); tAvg.appendChild(el("span", "c-avg-val", st.avg));
+    side.appendChild(tMeta); side.appendChild(tAvg);
+    top.appendChild(tCov); top.appendChild(side); root.appendChild(top);
+    if(hlOn && hlMode === "grouped"){
+      const wrapB = el("div", "ben-tile"); appendTracks(wrapB, displaySongs); root.appendChild(wrapB);
+    }else{
+      const trBox = el("div", "ben-tracks"); displaySongs.forEach(x => trBox.appendChild(mkTrackRow(x))); root.appendChild(trBox);
+    }
+  }
+  else if(lay === "compact"){
+    const top = el("div", "cmp-top"); top.appendChild(mkImg()); top.appendChild(mkHeader(true)); top.appendChild(mkAvgBox("Average"));
+    root.appendChild(top); appendTracks(root, displaySongs);
+  }
+  else if(lay === "atmo"){
+    const bg = el("img", "atmo-bg"); bg.src = coverSrc; if(!coverSrc.startsWith("data:")) bg.crossOrigin = "anonymous";
+    const scrim = el("div", "atmo-scrim"); scrim.style.background = theme.isLight ? "rgba(250,249,246,0.78)" : "rgba(10,12,18,0.70)";
+    const inner = el("div", "atmo-in");
+    const hd = el("div", "atmo-hd"); hd.appendChild(mkImg());
+    const meta = el("div", "atmo-meta"); meta.appendChild(mkHeader(true)); meta.appendChild(mkAvgBox("Average"));
+    hd.appendChild(meta); inner.appendChild(hd);
+    if(hlOn && hlMode === "grouped"){ appendTracks(inner, displaySongs); }
+    else{ const list = el("div", "atmo-list" + (displaySongs.length >= 12 ? " two" : "")); displaySongs.forEach(x => list.appendChild(mkTrackRow(x))); inner.appendChild(list); }
+    root.appendChild(bg); root.appendChild(scrim); root.appendChild(inner); targetContainer = inner;
+  }
+  else if(lay === "gallery"){
+    const hero = el("div", "gal-hero"); hero.appendChild(mkImg());
+    const bar = el("div", "gal-bar"); bar.appendChild(mkHeader(false)); bar.appendChild(mkAvgBox("AVG"));
+    hero.appendChild(bar); root.appendChild(hero);
+    if(hlOn && hlMode === "grouped"){ appendTracks(root, displaySongs); }
+    else{ const cols = el("div", "gal-cols"); displaySongs.forEach(x => cols.appendChild(mkTrackRow(x))); root.appendChild(cols); }
+  }
+
+  const ex = mkExtras();
+  if(ex) targetContainer.appendChild(ex);
+  return root;
+}
+
+/* ═════════════ STUDIO VIEW ═════════════ */
+function renderStudio(){
+  const a = curAlbum(); if(!a){ db.view = "home"; return renderHome(); }
+  document.body.classList.add("studio-mode");
+  document.body.classList.toggle("clean-shot", cleanShot);
+  app.innerHTML = "";
+
+  const wrap = el("div", "wrap wide");
+  if(cleanShot){
+    const ex = el("button", "clean-exit", "Exit Clean View (Esc)");
+    ex.onclick = () => { cleanShot = false; renderStudio(); };
+    app.appendChild(ex);
+  }
+
+  const tb = el("div", "topbar hide-clean");
+  const left = el("div", "top-actions");
+  const bRate = el("button", "icon-btn", "← Rate"); bRate.onclick = () => { cleanShot = false; db.view = "rate"; saveDB(false); render(); };
+  const bLib = el("button", "icon-btn", "Library"); bLib.onclick = () => { cleanShot = false; db.openId = null; db.view = "home"; saveDB(false); render(); };
+  left.appendChild(bRate); left.appendChild(bLib);
+
+  const right = el("div", "top-actions");
+  const syncB = mkSyncButton(); if(syncB) right.appendChild(syncB);
+  const bCov = el("button", "icon-btn", "🖼 Cover"); bCov.onclick = () => openCoverModal(a);
+  const bClean = el("button", "icon-btn", "⛶ Clean View"); bClean.onclick = () => { cleanShot = true; renderStudio(); };
+
+  const ratioSel = el("select", "compact-sel");
+  [["auto","PNG: Auto"],["portrait","PNG: Portrait 9:16"],["square","PNG: Square 1:1"],["post","PNG: Post 4:5"],["wide","PNG: Wide 16:9"]].forEach(([v,t]) => {
+    const o = el("option", "", t); o.value = v; ratioSel.appendChild(o);
+  });
+  ratioSel.value = db.settings.pngRatio || "auto";
+  ratioSel.onchange = () => { db.settings.pngRatio = ratioSel.value; saveDB(false); };
+
+  const bPng = el("button", "icon-btn", "↓ Save PNG");
+  bPng.onclick = async () => {
+    bPng.disabled = true; toast("Rendering PNG…");
+    try{
+      const blob = await renderCardPngBlob(a), url = URL.createObjectURL(blob), lk = document.createElement("a");
+      lk.href = url; lk.download = `${(a.artist ? a.artist + " - " : "") + (a.album || "album")}.png`.replace(/[\\/:*?"<>|]/g, "_");
+      lk.click(); setTimeout(() => URL.revokeObjectURL(url), 4000); toast("PNG saved");
+    }catch(e){ toast(e.message === "CORS" ? "Cover host blocks PNG — upload cover or use Clean View" : "PNG export failed"); }
+    bPng.disabled = false;
+  };
+  const bCpImg = el("button", "icon-btn", "Copy PNG");
+  bCpImg.onclick = async () => {
+    if(!navigator.clipboard || !window.ClipboardItem){ toast("Copy PNG unsupported — use Save PNG"); return; }
+    bCpImg.disabled = true; toast("Rendering PNG…");
+    try{
+      const blob = await renderCardPngBlob(a);
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toast("Image copied");
+    }catch(e){ toast("Copy failed — use Save PNG or Clean View"); }
+    bCpImg.disabled = false;
+  };
+  const bSet = el("button", "icon-btn", "⚙"); bSet.onclick = openSettingsModal;
+  right.appendChild(bCov); right.appendChild(bClean); right.appendChild(ratioSel); right.appendChild(bPng); right.appendChild(bCpImg); right.appendChild(bSet);
+  tb.appendChild(left); tb.appendChild(right); wrap.appendChild(tb);
+
+  const stage = el("div", "studio-stage"); stage.id = "card-stage";
+  if(cleanShot) stage.onclick = e => { if(e.target === stage){ cleanShot = false; renderStudio(); } };
+
+  let theme = CARD_THEMES.find(t => t.id === db.settings.cardTheme) || CARD_THEMES[1];
+  stage.appendChild(buildCardDOM(a, theme));
+  wrap.appendChild(stage);
+
+  if(theme.id === "coverMatch" && a.cover){
+    extractCoverPalette(a.cover).then(pal => {
+      if(pal && db.view === "studio" && db.settings.cardTheme === "coverMatch"){
+        stage.innerHTML = ""; stage.appendChild(buildCardDOM(a, pal));
+      }
+    });
+  }
+
+  const panel = el("div", "studio-panel hide-clean");
+  const tabs = el("div", "studio-tabs"), pills = el("div", "tab-pills");
+  const pLay = el("button", studioTab === "layout" ? "active" : "", `Layout (${CARD_LAYOUTS.length})`);
+  const pThm = el("button", studioTab === "theme" ? "active" : "", `Theme (${CARD_THEMES.length})`);
+  pLay.onclick = () => { studioTab = "layout"; renderStudio(); };
+  pThm.onclick = () => { studioTab = "theme"; renderStudio(); };
+  pills.appendChild(pLay); pills.appendChild(pThm);
+
+  const qActs = el("div", "top-actions");
+  const rndB = el("button", "icon-btn", "✦ Random");
+  rndB.onclick = () => {
+    const pool = studioTab === "layout" ? CARD_LAYOUTS : CARD_THEMES, key = studioTab === "layout" ? "cardLayout" : "cardTheme";
+    let pick; do{ pick = pool[Math.floor(Math.random() * pool.length)].id; }while(pick === db.settings[key] && pool.length > 1);
+    db.settings[key] = pick; saveDB(false); renderStudio();
+  };
+  const nxtB = el("button", "icon-btn", "Next →");
+  nxtB.onclick = () => {
+    const pool = studioTab === "layout" ? CARD_LAYOUTS : CARD_THEMES, key = studioTab === "layout" ? "cardLayout" : "cardTheme";
+    const i = pool.findIndex(x => x.id === db.settings[key]);
+    db.settings[key] = pool[(i + 1) % pool.length].id; saveDB(false); renderStudio();
+  };
+  qActs.appendChild(rndB); qActs.appendChild(nxtB);
+  tabs.appendChild(pills); tabs.appendChild(qActs); panel.appendChild(tabs);
+
+  if(studioTab === "layout"){
+    const lg = el("div", "lay-grid");
+    CARD_LAYOUTS.forEach(l => {
+      const b = el("button", "lay-btn" + (db.settings.cardLayout === l.id ? " active" : ""));
+      b.appendChild(el("span", "lay-ico", l.icon)); b.appendChild(el("span", "", l.name));
+      b.onclick = () => { db.settings.cardLayout = l.id; saveDB(false); renderStudio(); };
+      lg.appendChild(b);
+    });
+    panel.appendChild(lg);
+  }else{
+    const tg = el("div", "th-grid");
+    CARD_THEMES.forEach(t => {
+      const b = el("button", "th-btn" + (db.settings.cardTheme === t.id ? " active" : ""));
+      const dot = el("span", "th-dot"); dot.style.background = t.dot;
+      b.appendChild(dot); b.appendChild(el("span", "", t.name));
+      b.onclick = () => { db.settings.cardTheme = t.id; saveDB(false); renderStudio(); };
+      tg.appendChild(b);
+    });
+    panel.appendChild(tg);
+  }
+  wrap.appendChild(panel);
+  app.appendChild(wrap);
+}
+
+/* ═════════════ DRAG/DROP, HASH BOOT & SHORTCUTS ═════════════ */
+let dragDepth = 0;
+const overlay = document.getElementById("drag-overlay");
+window.addEventListener("dragenter", e => { if(e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files")){ dragDepth++; overlay.classList.add("show"); } });
+window.addEventListener("dragover", e => e.preventDefault());
+window.addEventListener("dragleave", () => { dragDepth = Math.max(0, dragDepth - 1); if(!dragDepth) overlay.classList.remove("show"); });
+window.addEventListener("drop", async e => {
+  e.preventDefault(); dragDepth = 0; overlay.classList.remove("show");
+  const dt = e.dataTransfer; if(!dt) return;
+  const { files, folderHint } = await collectFilesFromDT(dt);
+  if(files.length){
+    toast("Reading audio tags…", 1800);
+    const parsed = await parseDroppedFiles(files, folderHint);
+    if(!parsed){ toast("No audio files found in drop"); return; }
+    importOrMergeAlbum(parsed, false); render();
+    toast(`Loaded ${parsed.songs.length} tracks${parsed.cover ? " + cover" : ""}`);
+  }
+});
+
+document.addEventListener("keydown", e => {
+  if(document.querySelector(".modal-bg")){ if(e.key === "Escape") closeModal(); return; }
+  const tag = (document.activeElement && document.activeElement.tagName) || "";
+  if(tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+  if(db.view === "studio"){
+    if(e.key === "Escape" && cleanShot){ cleanShot = false; renderStudio(); }
+    else if(e.key === "ArrowRight"){ const i = CARD_THEMES.findIndex(x => x.id === db.settings.cardTheme); db.settings.cardTheme = CARD_THEMES[(i+1)%CARD_THEMES.length].id; saveDB(false); renderStudio(); }
+    else if(e.key === "ArrowLeft"){ const i = CARD_THEMES.findIndex(x => x.id === db.settings.cardTheme); db.settings.cardTheme = CARD_THEMES[(i-1+CARD_THEMES.length)%CARD_THEMES.length].id; saveDB(false); renderStudio(); }
+    return;
+  }
+  if(db.view === "rate"){
+    const a = curAlbum(); if(!a || activeTrack < 0 || !a.songs[activeTrack]) return;
+    if(e.key === "ArrowDown" && activeTrack < a.songs.length - 1){ e.preventDefault(); setActiveTrack(a, activeTrack + 1); renderRate(); return; }
+    if(e.key === "ArrowUp" && activeTrack > 0){ e.preventDefault(); setActiveTrack(a, activeTrack - 1); renderRate(); return; }
+    if(baseScore === null){
+      if(/^[0-4]$/.test(e.key)){ a.songs[activeTrack].s = Number(e.key); baseScore = Number(e.key); touchAlbum(a); saveDB(); renderRate(); }
+      else if(e.key === "5"){ a.songs[activeTrack].s = 5; ensurePending(a); touchAlbum(a); setActiveTrack(a, nextOpenIdx(a, activeTrack)); saveDB(); renderRate(); }
+      else if(e.key === "?" || e.key.toLowerCase() === "q"){ a.songs[activeTrack].s = "?"; ensurePending(a); touchAlbum(a); setActiveTrack(a, nextOpenIdx(a, activeTrack)); saveDB(); renderRate(); }
+    }else{
+      const map = { "0": 0, "Enter": 0, " ": 0, "2": 0.25, "5": 0.5, "7": 0.75 };
+      if(e.key === "Backspace" || e.key === "Escape"){ baseScore = null; renderRate(); }
+      else if(map[e.key] !== undefined){ e.preventDefault(); a.songs[activeTrack].s = baseScore + map[e.key]; ensurePending(a); touchAlbum(a); setActiveTrack(a, nextOpenIdx(a, activeTrack)); saveDB(); renderRate(); }
+    }
+  }
+});
+
+function checkHashImport(){
+  if(location.hash && location.hash.startsWith("#d=")){
+    const data = tryParseLink(location.hash);
+    if(data){
+      importOrMergeAlbum(data, data.songs.some(s => s.s !== null));
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+  }
+}
+
+function render(){
+  if(db.view === "studio" && curAlbum()) renderStudio();
+  else if(db.view === "rate" && curAlbum()) renderRate();
+  else{ db.view = "home"; renderHome(); }
+}
+
+loadDB();
+applyUITheme();
+checkHashImport();
+render();
+})();
+</script>
+</body>
+</html>
