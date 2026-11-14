@@ -16,7 +16,7 @@
 :root[data-ui="oled"]{--bg:#000000;--card:#0c0c0e;--card2:#151519;--tx:#f4f4f5;--mut:#8e8e98;--ac:#a3e635;--ac-on:#0b0b0b;--bd:#222228;--sh:none;color-scheme:dark}
 :root[data-ui="light"]{--bg:#f4f4f1;--card:#ffffff;--card2:#f9f9f7;--tx:#18181b;--mut:#71717a;--ac:#c2410c;--ac-on:#ffffff;--bd:#e4e4e7;--sh:0 2px 10px rgba(0,0,0,.04);color-scheme:light}
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:'Inter',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:'Inter',system-ui,-apple-system,"Segoe UI",Roboto,Tahoma,sans-serif;-webkit-tap-highlight-color:transparent}
 body{padding:calc(12px + env(safe-area-inset-top,0px)) 14px calc(114px + env(safe-area-inset-bottom,0px))}
 body.studio-mode{padding-bottom:calc(36px + env(safe-area-inset-bottom,0px))}
 body.clean-shot{padding:32px 14px}
@@ -74,6 +74,10 @@ select.compact-sel{width:auto;padding:7px 10px;font-size:12.5px;border-radius:9p
 .t-left{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
 .t-idx{font-family:'DM Mono',monospace;font-size:12px;color:var(--mut);min-width:20px}
 .t-nm{font-weight:500;font-size:14.5px;overflow-wrap:anywhere}
+.t-cl-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.note-ind{padding:3px 7px;border-radius:7px;font-size:12px;line-height:1.2;background:var(--card2);border:1px solid var(--bd);color:var(--ac)}
+.note-ind:hover{border-color:var(--ac)}
+button.ghost.note-on{color:var(--ac);background:var(--card2)}
 .t-bdg{font-family:'DM Mono',monospace;font-weight:700;font-size:14.5px;color:var(--ac);min-width:40px;text-align:right;flex-shrink:0}
 .t-card.un .t-bdg{color:var(--mut);font-weight:400}
 .t-act-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.t-act-top .t-nm{font-weight:600;font-size:15px}
@@ -83,6 +87,10 @@ select.compact-sel{width:auto;padding:7px 10px;font-size:12.5px;border-radius:9p
 .kpad2 .bk{flex:0 0 44px;border-radius:50%;color:var(--mut)}
 .kpad1 button.on,.kpad2 button.on{background:var(--ac);color:var(--ac-on);border-color:var(--ac)}
 .rate-add-bar{display:flex;gap:8px;margin-bottom:10px}.rate-add-bar input{flex:1;font-size:14px;padding:8px 11px}
+
+.note-read{unicode-bidi:plaintext;text-align:start;line-height:1.7;white-space:pre-wrap;background:var(--card2);border:1px solid var(--bd);border-radius:11px;padding:12px 14px;font-size:14.5px;overflow-wrap:anywhere;font-family:'Inter',Tahoma,system-ui,sans-serif}
+.note-ta{unicode-bidi:plaintext;text-align:start;line-height:1.65;min-height:115px;font-family:'Inter',Tahoma,system-ui,sans-serif}
+.note-tr-lbl{font-size:13px;color:var(--mut);margin-bottom:8px;font-weight:500}
 
 .foot{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));z-index:20}
 .foot-in{max-width:680px;margin:0 auto}
@@ -216,7 +224,7 @@ select.compact-sel{width:auto;padding:7px 10px;font-size:12.5px;border-radius:9p
 </head>
 <body>
 <div id="app"></div>
-<div id="drag-overlay"><div class="drag-box"><h2>Drop Album Folder or Audio Files</h2><p>Reads Artist, Album, Year, Tracklist &amp; Cover locally</p></div></div>
+<div id="drag-overlay"><div class="drag-box"><h2>Drop Album, Audio or Sync File</h2><p>Reads Audio Metadata locally or merges Offline .json Sync File</p></div></div>
 <div id="toast" class="toast"></div>
 
 <script>
@@ -264,7 +272,7 @@ function getAlbumCover(a){
   return coverMem.get(String(a.id)) || "";
 }
 
-/* ═════════════ STORAGE, SETTINGS & PRIVATE REPO SYNC ═════════════ */
+/* ═════════════ STORAGE, SETTINGS & SHARED MERGE ENGINE ═════════════ */
 const STORE_KEY = "album-rater-studio-v1";
 const DEFAULT_SETTINGS = {
   uiTheme: "auto", cardLayout: "side", cardTheme: "midnight",
@@ -315,13 +323,77 @@ function saveDB(markDirty = true){
     return a;
   });
   try{ localStorage.setItem(STORE_KEY, JSON.stringify({ ...db, albums: slimAlbums })); }
-  catch(e){ toast("Browser storage full — export JSON backup"); }
+  catch(e){ toast("Browser storage full — export sync file"); }
 }
 
 const touchAlbum = a => { if(a) a.updatedAt = Date.now(); };
 function applyUITheme(){
   const t = db.settings.uiTheme || "auto", r = document.documentElement;
   if(t === "auto") r.removeAttribute("data-ui"); else r.setAttribute("data-ui", t);
+}
+
+// Unified timestamp-based merge used by BOTH Cloud Sync & Offline .json File Sync
+function computeMergedLibrary(incomingData){
+  const delMap = new Map();
+  [...(db.deleted || []), ...(incomingData.deleted || [])].forEach(d => {
+    if(!d || !d.id) return;
+    if((d.at || 0) > (delMap.get(d.id) || 0)) delMap.set(d.id, d.at || 0);
+  });
+
+  const albMap = new Map();
+  const putAlb = src => {
+    if(!src || !src.id || !Array.isArray(src.songs)) return;
+    const upd = src.updatedAt || src.createdAt || 0;
+    if((delMap.get(src.id) || 0) > upd) return;
+    const cur = albMap.get(src.id);
+    if(!cur){ albMap.set(src.id, { ...src, updatedAt: upd }); return; }
+    const win = upd >= (cur.updatedAt || 0) ? { ...src, updatedAt: upd } : cur;
+    const lose = win === cur ? src : cur;
+    const cov = (win.cover === "idb" || lose.cover === "idb") ? "idb" : (win.cover || lose.cover || "");
+    albMap.set(src.id, { ...win, cover: cov });
+  };
+
+  db.albums.forEach(putAlb);
+  (incomingData.albums || []).forEach(putAlb);
+
+  const mergedAlbums = [...albMap.values()].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  const cutoff = Date.now() - 90 * 86400000;
+  const mergedDeleted = [...delMap.entries()].filter(([, at]) => at > cutoff).map(([id, at]) => ({ id, at }));
+  return { mergedAlbums, mergedDeleted };
+}
+
+function buildSyncPayloadObject(albumsList = db.albums, deletedList = db.deleted){
+  return {
+    v: 2,
+    exportedAt: Date.now(),
+    albums: albumsList.map(a => ({
+      ...a,
+      cover: (a.cover && !a.cover.startsWith("data:") && a.cover !== "idb") ? a.cover : ""
+    })),
+    deleted: deletedList || []
+  };
+}
+
+function applyOfflineSyncMerge(incomingData){
+  if(!incomingData || !Array.isArray(incomingData.albums)) return false;
+  const { mergedAlbums, mergedDeleted } = computeMergedLibrary(incomingData);
+  db.albums = mergedAlbums.map(a => ({
+    ...a,
+    cover: coverMem.has(String(a.id)) ? "idb" : (a.cover === "idb" ? "" : (a.cover || ""))
+  }));
+  db.deleted = mergedDeleted;
+  if(db.openId && !curAlbum()) db.openId = null;
+  saveDB(true);
+  return mergedAlbums.length;
+}
+
+function downloadSyncFile(){
+  const payload = JSON.stringify(buildSyncPayloadObject());
+  const blob = new Blob([payload], { type: "application/json" });
+  const url = URL.createObjectURL(blob), lk = document.createElement("a");
+  lk.href = url; lk.download = "album-rater-sync.json";
+  lk.click(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast(`Exported sync file (${db.albums.length} albums)`);
 }
 
 /* ═════════════ PRIVATE GITHUB REPO SYNC (TEXT ONLY, 0 COVERS UPLOADED) ═════════════ */
@@ -396,40 +468,8 @@ async function syncWithPrivateRepo(attempt = 0){
       if(e.status !== 404) throw e;
     }
 
-    const delMap = new Map();
-    [...(db.deleted || []), ...(remoteData.deleted || [])].forEach(d => {
-      if(!d || !d.id) return;
-      if((d.at || 0) > (delMap.get(d.id) || 0)) delMap.set(d.id, d.at || 0);
-    });
-
-    const albMap = new Map();
-    const putAlb = src => {
-      if(!src || !src.id) return;
-      const upd = src.updatedAt || src.createdAt || 0;
-      if((delMap.get(src.id) || 0) > upd) return;
-      const cur = albMap.get(src.id);
-      if(!cur){ albMap.set(src.id, { ...src, updatedAt: upd }); return; }
-      const win = upd >= (cur.updatedAt || 0) ? { ...src, updatedAt: upd } : cur;
-      const lose = win === cur ? src : cur;
-      const cov = (win.cover === "idb" || lose.cover === "idb") ? "idb" : (win.cover || lose.cover || "");
-      albMap.set(src.id, { ...win, cover: cov });
-    };
-
-    db.albums.forEach(putAlb);
-    (remoteData.albums || []).forEach(putAlb);
-
-    const mergedAlbums = [...albMap.values()].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-    const cutoff = Date.now() - 90 * 86400000;
-    const mergedDeleted = [...delMap.entries()].filter(([, at]) => at > cutoff).map(([id, at]) => ({ id, at }));
-
-    const remotePayload = {
-      v: 2,
-      albums: mergedAlbums.map(a => ({
-        ...a,
-        cover: (a.cover && !a.cover.startsWith("data:") && a.cover !== "idb") ? a.cover : ""
-      })),
-      deleted: mergedDeleted
-    };
+    const { mergedAlbums, mergedDeleted } = computeMergedLibrary(remoteData);
+    const remotePayload = buildSyncPayloadObject(mergedAlbums, mergedDeleted);
 
     try{
       await ghApi(`/repos/${owner}/${encodeURIComponent(repo)}/contents/${SYNC_FILE}`, token, {
@@ -786,6 +826,18 @@ async function collectFilesFromDT(dt){
   return { files, folderHint };
 }
 
+async function tryImportSyncJsonFile(files){
+  const jf = Array.from(files || []).find(f => /\.json$/i.test(f.name));
+  if(!jf) return false;
+  try{
+    const parsed = JSON.parse(await jf.text());
+    const cnt = applyOfflineSyncMerge(parsed);
+    if(cnt === false) return false;
+    render(); toast(`Merged offline sync (${cnt} albums)`);
+    return true;
+  }catch(e){ return false; }
+}
+
 /* ═════════════ ONLINE SEARCH & COVER ENGINE ═════════════ */
 const EDITION_RE = /\s*[\(\[][^\)\]]*(deluxe|edition|remaster|version|expanded|anniversary|bonus|explicit|mono|stereo)[^\)\]]*[\)\]]|\s+[-–]\s+(deluxe|remaster|\d{4}\s+remaster).*$/gi;
 const stripEdition = s => (s || "").replace(EDITION_RE, "").trim();
@@ -907,11 +959,11 @@ function buildTransferText(a){
 }
 function buildShareLink(a){
   if(!/^https?:/.test(location.protocol)) return "";
-  return `${location.origin}${location.pathname}#d=${encodePayload({ v: 1, ar: a.artist || "", al: a.album || "", yr: a.year || "", au: a.auto ? 1 : 0, t: a.songs.filter(s => !(a.auto && s.s === null && !s.n)).map(s => [s.n, s.s]) })}`;
+  return `${location.origin}${location.pathname}#d=${encodePayload({ v: 1, ar: a.artist || "", al: a.album || "", yr: a.year || "", au: a.auto ? 1 : 0, t: a.songs.filter(s => !(a.auto && s.s === null && !s.n)).map(s => s.note ? [s.n, s.s, s.note] : [s.n, s.s]) })}`;
 }
 function tryParseLink(txt){
   const m = String(txt || "").match(/#d=([A-Za-z0-9\-_]+)/); if(!m) return null;
-  try{ const p = decodePayload(m[1]); if(!p || !Array.isArray(p.t)) return null; return { artist: p.ar || "", album: p.al || "Untitled Album", year: p.yr || "", auto: !!p.au, songs: p.t.map(x => ({ n: String(x[0] || ""), s: x[1] === undefined ? null : x[1] })) }; }catch(e){ return null; }
+  try{ const p = decodePayload(m[1]); if(!p || !Array.isArray(p.t)) return null; return { artist: p.ar || "", album: p.al || "Untitled Album", year: p.yr || "", auto: !!p.au, songs: p.t.map(x => { const s = { n: String(x[0] || ""), s: x[1] === undefined ? null : x[1] }; if(x[2]) s.note = String(x[2]); return s; }) }; }catch(e){ return null; }
 }
 function parseTransferBlock(raw){
   const tr = String(raw || "").replace(/\r/g, "").trim(); if(!tr) return null;
@@ -958,9 +1010,11 @@ function importOrMergeAlbum(data, goStudio){
         else ex.cover = data.cover;
       }
       const generic = data.songs.every(s => /^track\s+\d+$/i.test(s.n) || !s.n);
-      if(generic && ex.songs.length === data.songs.length) ex.songs.forEach((s, i) => s.s = data.songs[i].s);
-      else if(ex.songs.length === data.songs.length) ex.songs.forEach((s, i) => { if(data.songs[i].n) s.n = data.songs[i].n; s.s = data.songs[i].s; });
-      else ex.songs = data.songs;
+      if(generic && ex.songs.length === data.songs.length){
+        ex.songs.forEach((s, i) => { s.s = data.songs[i].s; if(data.songs[i].note) s.note = data.songs[i].note; });
+      }else if(ex.songs.length === data.songs.length){
+        ex.songs.forEach((s, i) => { if(data.songs[i].n) s.n = data.songs[i].n; s.s = data.songs[i].s; if(data.songs[i].note) s.note = data.songs[i].note; });
+      }else ex.songs = data.songs;
       ex.auto = !!data.auto; touchAlbum(ex);
       db.openId = ex.id; db.view = (goStudio && calcStat(ex).rated > 0) ? "studio" : "rate"; saveDB();
       toast(getAlbumCover(ex) ? "Merged with saved album & cover" : "Updated saved album"); return ex;
@@ -1167,6 +1221,62 @@ function openModal(title, build){
 function closeModal(){ const m = document.querySelector(".modal-bg"); if(m) m.remove(); }
 function mkSwitch(val, onCh){ const l = el("label", "switch"), i = el("input"); i.type = "checkbox"; i.checked = !!val; i.onchange = () => onCh(i.checked); l.appendChild(i); l.appendChild(el("span", "slider")); return l; }
 
+// Per-track private note modal (opens in Read mode when note exists to avoid keyboard popup, full dir="auto" RTL support)
+function openTrackNoteModal(a, idx){
+  const s = a.songs[idx]; if(!s) return;
+  const trTitle = s.n || `Track ${idx + 1}`;
+  let editing = !s.note;
+
+  openModal("Track Note", mod => {
+    const body = el("div");
+    function draw(){
+      body.innerHTML = "";
+      body.appendChild(el("div", "note-tr-lbl", `${idx + 1}. ${trTitle}`));
+      if(!editing && s.note){
+        const rd = el("div", "note-read", s.note);
+        rd.setAttribute("dir", "auto");
+        body.appendChild(rd);
+        const acts = el("div", "ctx-actions");
+        const ed = el("button", "primary", "✎ Edit Note");
+        ed.onclick = () => { editing = true; draw(); };
+        const cl = el("button", "", "Close");
+        cl.onclick = closeModal;
+        acts.appendChild(ed); acts.appendChild(cl);
+        body.appendChild(acts);
+      }else{
+        const ta = el("textarea", "note-ta");
+        ta.setAttribute("dir", "auto");
+        ta.placeholder = "Write a short private note (Persian or English)…";
+        ta.value = s.note || "";
+        body.appendChild(ta);
+
+        const acts = el("div", "ctx-actions");
+        const sv = el("button", "primary", "Save Note");
+        sv.onclick = () => {
+          const val = ta.value.trim();
+          if(val) s.note = val; else delete s.note;
+          touchAlbum(a); saveDB(); closeModal(); renderRate();
+          toast(val ? "Note saved" : "Note cleared");
+        };
+        acts.appendChild(sv);
+        if(s.note){
+          const rm = el("button", "", "Delete");
+          rm.onclick = () => { delete s.note; touchAlbum(a); saveDB(); closeModal(); renderRate(); toast("Note deleted"); };
+          acts.appendChild(rm);
+        }else{
+          const cn = el("button", "", "Cancel");
+          cn.onclick = closeModal;
+          acts.appendChild(cn);
+        }
+        body.appendChild(acts);
+        setTimeout(() => ta.focus(), 40);
+      }
+    }
+    draw();
+    mod.appendChild(body);
+  });
+}
+
 function openSettingsModal(){
   openModal("Settings", mod => {
     const s = db.settings;
@@ -1198,11 +1308,11 @@ function openSettingsModal(){
       row(g, "Top Track Badge", "Highest scored track", mkSwitch(s.showBestTrack, v => { s.showBestTrack = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
       row(g, "Score Distribution Bar", "Proportional rating bar", mkSwitch(s.showDistribution, v => { s.showDistribution = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
       row(g, "Rated Date", "Completion date in footer", mkSwitch(s.showDate, v => { s.showDate = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
-      row(g, "Personal Note", "Short review line on card", mkSwitch(s.showNote, v => { s.showNote = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
+      row(g, "Album Note", "Short album review line on card", mkSwitch(s.showNote, v => { s.showNote = v; saveDB(false); if(db.view === "studio") renderStudio(); }));
     });
 
     grp("Private Cloud Sync (GitHub Repo)", g => {
-      g.appendChild(el("div", "set-sub", "Syncs lightweight library.json to your Private GitHub repo (no local covers uploaded). Local covers stay safely in IndexedDB. Local data is never erased on error."));
+      g.appendChild(el("div", "set-sub", "Syncs lightweight library.json to your Private GitHub repo (no local covers uploaded). Local data is never erased on error."));
       const rep = el("input"); rep.type = "text"; rep.placeholder = "Private Repo name (e.g. album-rater-data)"; rep.value = s.syncRepo || "album-rater-data"; rep.style.marginTop = "8px";
       const tok = el("input"); tok.type = "password"; tok.placeholder = "GitHub Token (Contents Read+Write)"; tok.value = s.syncToken || ""; tok.style.marginTop = "6px";
       const act = el("div", "ctx-actions");
@@ -1217,19 +1327,40 @@ function openSettingsModal(){
       g.appendChild(rep); g.appendChild(tok); g.appendChild(act);
     });
 
-    grp("Backup & Reset", g => {
-      const r = el("div", "ctx-actions"), cb = el("button", "", "Copy Backup JSON"), rb = el("button", "", "Restore JSON");
-      cb.onclick = () => copyText(JSON.stringify({ albums: db.albums.map(a => ({ ...a, cover: (a.cover && a.cover !== "idb") ? a.cover : "" })), settings: db.settings }), "Backup copied");
-      const ta = el("textarea"); ta.placeholder = "Paste backup JSON here"; ta.style.cssText = "display:none;margin-top:8px";
-      const imp = el("button", "primary", "Import Backup"); imp.style.cssText = "display:none;margin-top:6px;width:100%";
+    grp("Offline Sync File (.json) & Backup", g => {
+      g.appendChild(el("div", "set-sub", "No internet? Export a tiny .json sync file and send via Quick Share / USB, then Import (or drop it anywhere on Windows) to smart-merge keeping your local covers."));
+      const fRow = el("div", "ctx-actions");
+      const expB = el("button", "primary", "↓ Export Sync File (.json)");
+      expB.onclick = downloadSyncFile;
+
+      const impLbl = el("label", "chip", "↑ Import Sync File (.json)");
+      impLbl.style.cssText = "cursor:pointer;display:flex;align-items:center;justify-content:center;flex:1;min-width:140px;padding:9px 13px;font-size:14px;color:var(--tx);border-radius:10px";
+      const impIn = el("input"); impIn.type = "file"; impIn.accept = ".json,application/json"; impIn.style.display = "none";
+      impIn.onchange = async () => {
+        const f = impIn.files[0]; if(!f) return;
+        try{
+          const d = JSON.parse(await f.text());
+          const cnt = applyOfflineSyncMerge(d);
+          if(cnt === false) throw 0;
+          closeModal(); render(); toast(`Merged offline sync (${cnt} albums)`);
+        }catch(e){ toast("Invalid sync .json file"); }
+      };
+      impLbl.appendChild(impIn);
+      fRow.appendChild(expB); fRow.appendChild(impLbl);
+      g.appendChild(fRow);
+
+      const r = el("div", "ctx-actions"), cb = el("button", "", "Copy Sync JSON Text"), rb = el("button", "", "Paste & Merge JSON");
+      cb.onclick = () => copyText(JSON.stringify(buildSyncPayloadObject()), "Sync JSON copied");
+      const ta = el("textarea"); ta.placeholder = "Paste sync/backup JSON here"; ta.style.cssText = "display:none;margin-top:8px";
+      const imp = el("button", "primary", "Merge Pasted JSON"); imp.style.cssText = "display:none;margin-top:6px;width:100%";
       rb.onclick = () => { ta.style.display = ""; imp.style.display = ""; ta.focus(); };
       imp.onclick = () => {
         try{
-          const d = JSON.parse(ta.value); if(!d || !Array.isArray(d.albums)) throw 0;
-          const have = new Set(db.albums.map(x => x.id)); let n = 0;
-          d.albums.forEach(x => { if(x && Array.isArray(x.songs) && !have.has(x.id)){ x.updatedAt = x.updatedAt || Date.now(); db.albums.push(x); n++; } });
-          saveDB(); closeModal(); render(); toast(n ? `Imported ${n} album(s)` : "No new albums in backup");
-        }catch(e){ toast("Invalid backup JSON"); }
+          const d = JSON.parse(ta.value);
+          const cnt = applyOfflineSyncMerge(d);
+          if(cnt === false) throw 0;
+          closeModal(); render(); toast(`Merged (${cnt} albums)`);
+        }catch(e){ toast("Invalid JSON"); }
       };
       const rst = el("button", "ghost", "Reset Settings to Default"); rst.style.cssText = "width:100%;margin-top:8px";
       rst.onclick = () => { const tk = s.syncToken, rp = s.syncRepo; db.settings = { ...DEFAULT_SETTINGS, syncToken: tk, syncRepo: rp }; saveDB(false); applyUITheme(); closeModal(); render(); toast("Settings reset"); };
@@ -1295,7 +1426,7 @@ function openEditModal(a){
     const ar = el("input"); ar.type = "text"; ar.placeholder = "Artist"; ar.value = a.artist || "";
     const al = el("input"); al.type = "text"; al.placeholder = "Album"; al.value = a.album || "";
     const yr = el("input"); yr.type = "text"; yr.placeholder = "Release Year (e.g. 2000)"; yr.value = a.year || "";
-    const nt = el("input"); nt.type = "text"; nt.placeholder = "Personal note (optional)"; nt.value = a.note || "";
+    const nt = el("input"); nt.type = "text"; nt.placeholder = "Album note (optional)"; nt.value = a.note || ""; nt.setAttribute("dir", "auto");
     const g1 = el("div", "row2"); g1.appendChild(ar); g1.appendChild(al);
     const g2 = el("div", "row2"); g2.style.marginTop = "8px"; g2.appendChild(yr); g2.appendChild(nt);
     mod.appendChild(g1); mod.appendChild(g2);
@@ -1322,7 +1453,7 @@ function openEditModal(a){
     saveB.onclick = () => {
       a.artist = ar.value.trim(); a.album = al.value.trim() || "Untitled Album";
       a.year = yr.value.trim(); a.note = nt.value.trim();
-      a.songs = draftSongs.map(x => ({ n: x.n.trim(), s: x.s }));
+      a.songs = draftSongs.map(x => { const o = { n: x.n.trim(), s: x.s }; if(x.note) o.note = x.note; return o; });
       if(a.auto) ensurePending(a);
       touchAlbum(a); setActiveTrack(a, nextOpenIdx(a, -1));
       saveDB(); closeModal(); render(); toast("Album updated");
@@ -1403,7 +1534,7 @@ function renderHome(){
   const box = el("div", "box");
   const dz = el("div", "drop-area");
   const inp = el("textarea");
-  inp.placeholder = "Drop an album folder or audio files here — or type \"Artist - Album\", paste tracklist / transfer text, or Spotify URL";
+  inp.placeholder = "Drop an album folder, audio files, or .json sync file — or type \"Artist - Album\", paste tracklist / transfer text, or Spotify URL";
   dz.appendChild(inp);
 
   const subRow = el("div", "subtle-row"), chips = el("div", "chips");
@@ -1445,9 +1576,10 @@ function renderHome(){
 
   async function handlePickedFiles(files, hint = ""){
     if(!files || !files.length) return;
+    if(await tryImportSyncJsonFile(files)) return;
     status.className = "status-msg"; status.textContent = "Reading audio tags locally…";
     const parsed = await parseDroppedFiles(files, hint);
-    if(!parsed){ status.className = "status-msg err"; status.textContent = "No supported audio files found."; return; }
+    if(!parsed){ status.className = "status-msg err"; status.textContent = "No supported audio or sync files found."; return; }
     importOrMergeAlbum(parsed, false); render();
     toast(`Loaded ${parsed.songs.length} tracks${parsed.cover ? " + cover saved locally" : " (no embedded cover)"}`);
   }
@@ -1499,11 +1631,10 @@ function renderHome(){
       bGo.onclick = () => { importOrMergeAlbum(parsed.data, parsed.hasScores); render(); };
       ctx.appendChild(bGo);
     }else if(parsed.kind === "backup"){
-      const bImp = el("button", "primary", `Import Backup (${parsed.data.albums.length} albums)`);
+      const bImp = el("button", "primary", `Merge Sync JSON (${parsed.data.albums.length} albums)`);
       bImp.onclick = () => {
-        const have = new Set(db.albums.map(x => x.id)); let n = 0;
-        parsed.data.albums.forEach(x => { if(x && Array.isArray(x.songs) && !have.has(x.id)){ x.updatedAt = x.updatedAt || Date.now(); db.albums.push(x); n++; } });
-        saveDB(); inp.value = ""; render(); toast(`Imported ${n} album(s)`);
+        const cnt = applyOfflineSyncMerge(parsed.data);
+        inp.value = ""; render(); toast(`Merged (${cnt} albums)`);
       };
       ctx.appendChild(bImp);
     }else if(parsed.kind === "scores"){
@@ -1601,18 +1732,27 @@ function renderRate(){
     if(!isAct){
       d.className += " cl";
       const lf = el("div", "t-left"); lf.appendChild(el("span", "t-idx", idx + 1)); lf.appendChild(el("span", "t-nm", nm));
-      d.appendChild(lf); d.appendChild(el("span", "t-bdg", fmtScore(s.s)));
+      const rt = el("div", "t-cl-right");
+      if(s.note){
+        const nb = el("button", "note-ind", "📝"); nb.title = "Read / edit track note";
+        nb.onclick = e => { e.stopPropagation(); openTrackNoteModal(a, idx); };
+        rt.appendChild(nb);
+      }
+      rt.appendChild(el("span", "t-bdg", fmtScore(s.s)));
+      d.appendChild(lf); d.appendChild(rt);
       d.onclick = () => { setActiveTrack(a, idx); drawList(true); };
       return d;
     }
     const top = el("div", "t-act-top"), lf = el("div", "t-left");
     lf.appendChild(el("span", "t-idx", idx + 1)); lf.appendChild(el("span", "t-nm", nm));
     const acts = el("div"); acts.style.cssText = "display:flex;gap:2px";
+    const ntB = el("button", "ghost" + (s.note ? " note-on" : ""), "📝"); ntB.title = s.note ? "Read / edit track note" : "Add track note";
+    ntB.onclick = () => openTrackNoteModal(a, idx);
     const renB = el("button", "ghost", "✎"); renB.title = "Rename";
     renB.onclick = () => { const nv = prompt("Track name:", s.n); if(nv !== null){ s.n = nv.trim(); touchAlbum(a); saveDB(); drawList(false); } };
     const rmB = el("button", "ghost", "✕"); rmB.title = "Remove";
     rmB.onclick = () => { a.songs.splice(idx, 1); ensurePending(a); touchAlbum(a); setActiveTrack(a, nextOpenIdx(a, idx - 1)); saveDB(); drawList(true); };
-    acts.appendChild(renB); acts.appendChild(rmB); top.appendChild(lf); top.appendChild(acts); d.appendChild(top);
+    acts.appendChild(ntB); acts.appendChild(renB); acts.appendChild(rmB); top.appendChild(lf); top.appendChild(acts); d.appendChild(top);
 
     const redo = () => { listWrap.replaceChild(buildTrackCard(idx), d); updFoot(); };
     if(baseScore === null){
@@ -1657,7 +1797,7 @@ function renderRate(){
   drawList(false);
 }
 
-/* ═════════════ CARD BUILDER (14 LAYOUTS × 36 THEMES × 6 HIGHLIGHT MODES) ═════════════ */
+/* ═════════════ CARD BUILDER (14 LAYOUTS × 36 THEMES × 6 HIGHLIGHT MODES — NEVER SHOWS TRACK NOTES) ═════════════ */
 function buildCardDOM(a, theme){
   const s = db.settings, st = calcStat(a), lay = s.cardLayout || "side";
   const hlOn = !!s.highlightEnabled, hlMode = s.highlightStyle || "spotlight";
@@ -1742,7 +1882,7 @@ function buildCardDOM(a, theme){
   function mkExtras(){
     if(!s.showBestTrack && !s.showDistribution && !s.showDate && !(s.showNote && a.note)) return null;
     const ex = el("div", "c-extras");
-    if(s.showNote && a.note) ex.appendChild(el("div", "c-note", `“${a.note}”`));
+    if(s.showNote && a.note){ const nt = el("div", "c-note", `“${a.note}”`); nt.setAttribute("dir", "auto"); ex.appendChild(nt); }
     if(s.showBestTrack){
       const best = cleanSongs.filter(x => typeof x.s === "number").sort((x, y) => y.s - x.s)[0];
       if(best){ const sp = el("span"); sp.appendChild(document.createTextNode("Top: ")); sp.appendChild(el("b", "", `${best.n} (${fmtScore(best.s)})`)); ex.appendChild(sp); }
@@ -1970,7 +2110,7 @@ function renderStudio(){
   app.appendChild(wrap);
 }
 
-/* ═════════════ DRAG/DROP, HASH BOOT & SHORTCUTS ═════════════ */
+/* ═════════════ GLOBAL DRAG/DROP, HASH BOOT & SHORTCUTS ═════════════ */
 let dragDepth = 0;
 const overlay = document.getElementById("drag-overlay");
 window.addEventListener("dragenter", e => { if(e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files")){ dragDepth++; overlay.classList.add("show"); } });
@@ -1981,9 +2121,10 @@ window.addEventListener("drop", async e => {
   const dt = e.dataTransfer; if(!dt) return;
   const { files, folderHint } = await collectFilesFromDT(dt);
   if(files.length){
+    if(await tryImportSyncJsonFile(files)) return;
     toast("Reading audio tags…", 1800);
     const parsed = await parseDroppedFiles(files, folderHint);
-    if(!parsed){ toast("No audio files found in drop"); return; }
+    if(!parsed){ toast("No audio or sync files found in drop"); return; }
     importOrMergeAlbum(parsed, false); render();
     toast(`Loaded ${parsed.songs.length} tracks${parsed.cover ? " + cover saved locally" : " (no embedded cover)"}`);
   }
