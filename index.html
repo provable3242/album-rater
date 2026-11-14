@@ -3,9 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111113">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
 <title>Album Rater</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{--bg:#f4f4f1;--card:#ffffff;--card2:#f9f9f7;--tx:#18181b;--mut:#71717a;--ac:#c2410c;--ac-on:#ffffff;--bd:#e4e4e7;--sh:0 2px 10px rgba(0,0,0,.04);color-scheme:light}
 @media(prefers-color-scheme:dark){:root:not([data-ui]){--bg:#111113;--card:#1a1a1e;--card2:#222228;--tx:#f4f4f5;--mut:#a1a1aa;--ac:#fb923c;--ac-on:#111113;--bd:#2c2c33;--sh:0 4px 16px rgba(0,0,0,.35);color-scheme:dark}}
@@ -283,7 +286,6 @@ function loadDB(){
         db.openId = p.openId || null; db.view = p.view || "home";
         db.dirty = !!p.dirty; db.lastSync = p.lastSync || 0;
         db.settings = { ...DEFAULT_SETTINGS, ...(p.settings || {}) };
-        // Migrate any legacy inline dataURL covers out of localStorage into IndexedDB
         let migrated = false;
         db.albums.forEach(a => {
           if(a.cover && a.cover.startsWith("data:")){ saveLocalCover(a.id, a.cover); a.cover = "idb"; migrated = true; }
@@ -308,7 +310,6 @@ function loadDB(){
 
 function saveDB(markDirty = true){
   if(markDirty && db.settings.syncToken) db.dirty = true;
-  // Never persist giant data: URIs into localStorage
   const slimAlbums = db.albums.map(a => {
     if(a.cover && a.cover.startsWith("data:")){ saveLocalCover(a.id, a.cover); return { ...a, cover: "idb" }; }
     return a;
@@ -395,14 +396,12 @@ async function syncWithPrivateRepo(attempt = 0){
       if(e.status !== 404) throw e;
     }
 
-    // Merge deleted tombstones
     const delMap = new Map();
     [...(db.deleted || []), ...(remoteData.deleted || [])].forEach(d => {
       if(!d || !d.id) return;
       if((d.at || 0) > (delMap.get(d.id) || 0)) delMap.set(d.id, d.at || 0);
     });
 
-    // Merge albums (preserve local IndexedDB cover unconditionally!)
     const albMap = new Map();
     const putAlb = src => {
       if(!src || !src.id) return;
@@ -412,7 +411,6 @@ async function syncWithPrivateRepo(attempt = 0){
       if(!cur){ albMap.set(src.id, { ...src, updatedAt: upd }); return; }
       const win = upd >= (cur.updatedAt || 0) ? { ...src, updatedAt: upd } : cur;
       const lose = win === cur ? src : cur;
-      // Preserve local cover marker ('idb') or online URL
       const cov = (win.cover === "idb" || lose.cover === "idb") ? "idb" : (win.cover || lose.cover || "");
       albMap.set(src.id, { ...win, cover: cov });
     };
@@ -424,7 +422,6 @@ async function syncWithPrivateRepo(attempt = 0){
     const cutoff = Date.now() - 90 * 86400000;
     const mergedDeleted = [...delMap.entries()].filter(([, at]) => at > cutoff).map(([id, at]) => ({ id, at }));
 
-    // Upload lightweight text-only payload (NO local image blobs ever uploaded!)
     const remotePayload = {
       v: 2,
       albums: mergedAlbums.map(a => ({
@@ -448,7 +445,6 @@ async function syncWithPrivateRepo(attempt = 0){
       throw putErr;
     }
 
-    // Re-attach local IndexedDB cover markers cleanly after merge
     db.albums = mergedAlbums.map(a => ({
       ...a,
       cover: coverMem.has(String(a.id)) ? "idb" : (a.cover === "idb" ? "" : (a.cover || ""))
@@ -583,7 +579,6 @@ async function parseMP4(file, needCover){
 
   const moovs = await findBox(0, file.size, ["moov"]);
   if(!moovs.length) return out;
-  // Only inspect udta/meta inside moov (skips huge trak sample tables!)
   const metaContainers = await findBox(moovs[0].start, moovs[0].end, ["udta", "meta"]);
   const decT = (b, dt) => (dt === 2 ? new TextDecoder("utf-16be").decode(b) : decUtf8.decode(b)).replace(/\0+$/, "").trim();
 
@@ -659,9 +654,7 @@ async function parseMP3(file, needCover){
     if(globalUnsync && ver === 3) buf = deUnsync(buf);
 
     let p = 0;
-    if((gFlags & 0x40) && buf.length >= 4){
-      p = ver === 4 ? syncsafe(buf, 0) : (4 + u32be(buf, 0));
-    }
+    if((gFlags & 0x40) && buf.length >= 4) p = ver === 4 ? syncsafe(buf, 0) : (4 + u32be(buf, 0));
 
     while(p < buf.length && buf[p] !== 0){
       let id, sz, hsz, fl = 0;
@@ -684,10 +677,7 @@ async function parseMP3(file, needCover){
         else{ while(k < pay.length && pay[k] !== 0) k++; mime = decLatin.decode(pay.subarray(1, k)).toLowerCase() || "image/jpeg"; if(mime === "jpg" || mime === "image/jpg") mime = "image/jpeg"; k += 2; }
         if(enc === 1 || enc === 2){ while(k + 1 < pay.length && !(pay[k] === 0 && pay[k+1] === 0)) k += 2; k += 2; }
         else{ while(k < pay.length && pay[k] !== 0) k++; k += 1; }
-        if(k < pay.length){
-          const imgBytes = pay.subarray(k);
-          out.coverBlob = new Blob([imgBytes], { type: detectImageMime(imgBytes, mime) });
-        }
+        if(k < pay.length){ const imgBytes = pay.subarray(k); out.coverBlob = new Blob([imgBytes], { type: detectImageMime(imgBytes, mime) }); }
       }
       p += hsz + sz;
     }
@@ -756,20 +746,11 @@ async function parseDroppedFiles(fileList, folderHint = ""){
   let cover = "", foundYear = "";
   const tracks = [], artistF = new Map(), albumF = new Map(), aArtistF = new Map();
 
-  if(folderCover){
-    const u = URL.createObjectURL(folderCover);
-    cover = await resizeImage(u, 680);
-    URL.revokeObjectURL(u);
-  }
+  if(folderCover){ const u = URL.createObjectURL(folderCover); cover = await resizeImage(u, 680); URL.revokeObjectURL(u); }
 
   for(const f of audio){
     const t = await readAudioTags(f, !cover);
-    if(t.coverBlob && !cover){
-      const u = URL.createObjectURL(t.coverBlob);
-      const resized = await resizeImage(u, 680);
-      URL.revokeObjectURL(u);
-      if(resized) cover = resized;
-    }
+    if(t.coverBlob && !cover){ const u = URL.createObjectURL(t.coverBlob); const resized = await resizeImage(u, 680); URL.revokeObjectURL(u); if(resized) cover = resized; }
     if(t.year && !foundYear) foundYear = t.year;
     if(t.albumArtist) aArtistF.set(t.albumArtist, (aArtistF.get(t.albumArtist) || 0) + 1);
     if(t.artist) artistF.set(t.artist, (artistF.get(t.artist) || 0) + 1);
@@ -961,7 +942,6 @@ function importOrMergeAlbum(data, goStudio){
   const ex = findMatchingAlbum(data), hasSc = data.songs.some(s => s.s !== null);
   if(ex){
     const exStats = calcStat(ex);
-    // Case A: Incoming folder/files dropped onto an already-synced album -> attach cover/year without losing scores!
     if(!hasSc && data.cover){
       saveLocalCover(ex.id, data.cover); ex.cover = "idb";
       if(data.year && !ex.year) ex.year = data.year;
@@ -970,7 +950,6 @@ function importOrMergeAlbum(data, goStudio){
       touchAlbum(ex); db.openId = ex.id; db.view = exStats.rated > 0 ? "studio" : "rate"; saveDB();
       toast("Attached local cover to existing album"); return ex;
     }
-    // Case B: Incoming scores/transfer onto prepped album
     if(hasSc && (exStats.rated === 0 || ex.songs.length === data.songs.length)){
       if(data.year && !ex.year) ex.year = data.year;
       if(data.artist && !ex.artist) ex.artist = data.artist;
@@ -1225,7 +1204,7 @@ function openSettingsModal(){
     grp("Private Cloud Sync (GitHub Repo)", g => {
       g.appendChild(el("div", "set-sub", "Syncs lightweight library.json to your Private GitHub repo (no local covers uploaded). Local covers stay safely in IndexedDB. Local data is never erased on error."));
       const rep = el("input"); rep.type = "text"; rep.placeholder = "Private Repo name (e.g. album-rater-data)"; rep.value = s.syncRepo || "album-rater-data"; rep.style.marginTop = "8px";
-      const tok = el("input"); tok.type = "password"; tok.placeholder = "GitHub Token (repo / Contents Read+Write)"; tok.value = s.syncToken || ""; tok.style.marginTop = "6px";
+      const tok = el("input"); tok.type = "password"; tok.placeholder = "GitHub Token (Contents Read+Write)"; tok.value = s.syncToken || ""; tok.style.marginTop = "6px";
       const act = el("div", "ctx-actions");
       const conn = el("button", "primary", "Save & Sync Now"), disc = el("button", "", "Disconnect");
       conn.onclick = async () => {
@@ -2054,6 +2033,10 @@ await initCoverDB();
 loadDB();
 applyUITheme();
 checkHashImport();
+if(location.protocol.startsWith("http")){
+  const ml = document.createElement("link"); ml.rel = "manifest"; ml.href = "./manifest.json"; document.head.appendChild(ml);
+  if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+}
 render();
 })();
 </script>
